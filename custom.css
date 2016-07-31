@@ -1,15 +1,24 @@
 @import url(https://fonts.googleapis.com/css?family=Raleway);
 @import 'https://fonts.googleapis.com/css?family=Inconsolata';
 @import 'https://fonts.googleapis.com/css?family=Alegreya';
+@import 'https://fonts.googleapis.com/css?family=Open+Sans';
+
 
 body {
 	font-family: 'Raleway', sans-serif;
 	font-size: 22px;
 }
 
+.main-header {
+  min-height: 180px;
+  height: 0vh;
+  background-size: 100% 100%;
+}
+
 .text_cell_render {
 		font-size: 22px;
-		font-family: 'Alegreya', serif;
+    font-family: 'Open Sans', sans-serif;
+		/**font-family: 'Alegreya', serif;**/
 		line-height: 200%;
 }
 
@@ -72,6 +81,11 @@ input[type="range"]::-webkit-slider-thumb:active {
   color: #579E81;
 }
 
+.style-4 {
+  font-size: 22px;
+  font-family: 'Open Sans', sans-serif;
+
+}
 @media only screen and (max-device-width: 480px) {
 .text_cell_render {
 	font-size: 20px;
