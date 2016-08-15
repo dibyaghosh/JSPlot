@@ -28,7 +28,8 @@
 				}
 				return __accu0__;
 			} ();
-			plot3 (x, y);
+			write (3, 'Hi');
+			bar (3, x, y);
 		};
 		__pragma__ ('<all>')
 			__all__.data = data;

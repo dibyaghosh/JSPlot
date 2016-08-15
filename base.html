@@ -1,0 +1,136 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.5.3/jstat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.min.js"></script>
+
+
+<script>
+
+    function sliderToHTML(pid,name,min,max,step){
+        console.log(name);
+        n2 = name.split(" ")[0]+Math.round(Math.random()*1000); // Really Shitty fix this
+          var htmlZ = '<div class="slider"><label>'+name+'</label><input type = "range" min="'+min+'" max="'+max+'" step="'+step+'" onchange="'+n2+'value'+pid+'.value=value;update('+pid+');"/><output class="slider" id="'+n2+'value'+pid+'">'+(min+max)/2+'</output></div>';
+          return htmlZ;
+        }
+    
+    function addSlider(pid,name,min,max,step){
+        console.log([name,min,max,step])
+      var html = sliderToHTML(pid,name,min,max,step);
+      var sLoc = $('#sliders'+pid);
+      sLoc.html(sLoc.html()+html);
+    }
+    function getJSLibrary(pid){
+        return eval("tmp"+pid);
+    }
+    function addAllSliders(pid){
+        tmpPID = getJSLibrary(pid);
+      sls = tmpPID.inputs();
+      for(i = 0; i < sls.length; i++){
+        inp = sls[i];
+        console.log([pid,inp[0],inp[1],inp[2],inp[3]]);
+        addSlider(pid,inp[0],inp[1],inp[2],inp[3]);
+      }
+    }
+    
+    function write(pid,str){
+        v = $("#console"+pid);
+        v.html(v.html()+str+"<br />");
+    }
+
+
+
+    function update(pid) {
+        $("#console"+pid).html("");
+        console.log("GOT HERE");
+        datasets[pid] = [];
+        allData[pid] = [];
+    	var values = $.map($("#sliders"+ pid + " output"), function(x){return parseFloat(x.value);});
+        tmpPID = getJSLibrary(pid);
+    	tmpPID.data.apply(this,values);
+        setType(pid);
+	};
+
+
+datasets = {};
+
+allData = {};
+charts = {}
+
+
+        var randomColor = function(opacity) {
+            return 'rgba(' + Math.round(Math.random() * 255) + ',' + Math.round(Math.random() * 255) + ',' + Math.round(Math.random() * 255) + ',' + (opacity || '.3') + ')';
+        };
+
+      function plot(pid,a,b){
+        data = convertCJSscatter(a,b)
+        datasets[pid].push({label:""+datasets[pid].length,
+            data:data}); 
+        }
+
+    function bar(pid,a,b){
+        var dictionary = {};
+        console.log(a.length,b.length);
+        for(i = 0; i <  Math.min(a.length,b.length); i++){
+            dictionary[a[i]] = b[i];
+        }
+        console.log(dictionary);
+        allData[pid].push(dictionary);
+    }
+
+    function barPost(pid){
+        values = {}
+        allData[pid].forEach(function(entry){
+            for(var elem in entry){
+                values[elem] = [];
+            }
+        });
+        var labels = [];
+            for(var key in values){
+                labels[labels.length] = key;
+        }
+        labels.sort(function(a, b){return a-b});
+        data = [];
+        allData[pid].forEach(function(entry){
+            semiData = [];
+            labels.forEach(function(lb){
+                if(lb in entry){
+                    semiData.push(entry[lb]);
+                }
+                else {
+                    semiData.push(0);
+                }
+            });
+            data.push({label:""+data.length,data:semiData});
+        });
+        return {labels:labels, datasets:data};
+    }
+
+    function convertCJSscatter(a,b){
+        // Converts from [1],[0] to [{x: 1, y: 0}]
+        new_data = []
+        for(i = 0; i < Math.min(a.length,b.length); i++){
+            new_data.push({x: a[i],y:b[i]})
+        }
+        return new_data;
+    }
+
+    
+    
+    
+    function setType(pid){
+        tmpPID = getJSLibrary(pid);
+        type = tmpPID.setup();
+        var ctx = $("#chart"+pid);
+        charts[pid].destroy();
+        if(type=='l'){
+        $.each(datasets[pid], function(i, dataset){dataset.backgroundColor = randomColor(0.5);});
+        charts[pid] = new Chart(ctx, {type:'scatter',data: {datasets:datasets[pid]}});
+
+        } else if (type == 'b'){
+            allNew = barPost(pid);
+            $.each(allNew.datasets, function(i, dataset){dataset.backgroundColor = randomColor(0.5);});
+            charts[pid] = new Chart(ctx, {type:'bar',data: allNew});
+        }
+        
+    }
+
+</script>

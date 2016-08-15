@@ -1,0 +1,16 @@
+<script>JSSOURCE</script>
+
+    <div class="container-fluid">
+    <div class="col-md-9">
+    <div id="consolePID"></div>
+    <canvas id="chartPID" >
+    </canvas>
+    </div>
+    <div id="slidersPID" class="col-md-3">
+    </div>
+    </div>
+    <script type="text/javascript">
+            addAllSliders(PID);
+            charts[PID] = new Chart($("#chartPID"));
+            update(PID);
+    </script>

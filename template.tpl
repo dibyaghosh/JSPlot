@@ -9,11 +9,13 @@
 
 
 {% block header %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js"></script>
 {{ super() }}
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
+<!--<script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/font-et-book/0.1/et-book.min.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 {% endblock header %}
@@ -22,6 +24,7 @@
 
 
 {% block input_group %}
+{% if not cell.metadata.get('hide',False) %}
     <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -36,4 +39,5 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock input_group %}

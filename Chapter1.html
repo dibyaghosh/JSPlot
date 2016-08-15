@@ -1,4 +1,5 @@
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js"></script>
 <!DOCTYPE html>
 <html>
@@ -11746,7 +11747,8 @@ div#notebook {
     <!-- End of mathjax configuration --></head>
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>
+<!--<script src="https://ajaxorg.github.io/ace-builds/src-min-noconflict/ace.js"></script>-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/font-et-book/0.1/et-book.min.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
@@ -11760,33 +11762,157 @@ div#notebook {
 
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse27">Code</a>
-        <a onclick="ace.edit('code27').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse27" class="panel-collapse collapse ">
-    <div id="code27" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[27]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">jsPlot</span>
-<span class="kn">import</span> <span class="nn">quizJS</span>
-<span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-</pre></div>
+
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+
+<div class="output_html rendered_html output_subarea ">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.5.3/jstat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.min.js"></script>
+
+
+<script>
+
+    function sliderToHTML(pid,name,min,max,step){
+        console.log(name);
+        n2 = name.split(" ")[0]+Math.round(Math.random()*1000); // Really Shitty fix this
+          var htmlZ = '<div class="slider"><label>'+name+'</label><input type = "range" min="'+min+'" max="'+max+'" step="'+step+'" onchange="'+n2+'value'+pid+'.value=value;update('+pid+');"/><output class="slider" id="'+n2+'value'+pid+'">'+(min+max)/2+'</output></div>';
+          return htmlZ;
+        }
+    
+    function addSlider(pid,name,min,max,step){
+        console.log([name,min,max,step])
+      var html = sliderToHTML(pid,name,min,max,step);
+      var sLoc = $('#sliders'+pid);
+      sLoc.html(sLoc.html()+html);
+    }
+    function getJSLibrary(pid){
+        return eval("tmp"+pid);
+    }
+    function addAllSliders(pid){
+        tmpPID = getJSLibrary(pid);
+      sls = tmpPID.inputs();
+      for(i = 0; i < sls.length; i++){
+        inp = sls[i];
+        console.log([pid,inp[0],inp[1],inp[2],inp[3]]);
+        addSlider(pid,inp[0],inp[1],inp[2],inp[3]);
+      }
+    }
+    
+    function write(pid,str){
+        v = $("#console"+pid);
+        v.html(v.html()+str+"<br />");
+    }
+
+
+
+    function update(pid) {
+        $("#console"+pid).html("");
+        console.log("GOT HERE");
+        datasets[pid] = [];
+        allData[pid] = [];
+    	var values = $.map($("#sliders"+ pid + " output"), function(x){return parseFloat(x.value);});
+        tmpPID = getJSLibrary(pid);
+    	tmpPID.data.apply(this,values);
+        setType(pid);
+	};
+
+
+datasets = {};
+
+allData = {};
+charts = {}
+
+
+        var randomColor = function(opacity) {
+            return 'rgba(' + Math.round(Math.random() * 255) + ',' + Math.round(Math.random() * 255) + ',' + Math.round(Math.random() * 255) + ',' + (opacity || '.3') + ')';
+        };
+
+      function plot(pid,a,b){
+        data = convertCJSscatter(a,b)
+        datasets[pid].push({label:""+datasets[pid].length,
+            data:data}); 
+        }
+
+    function bar(pid,a,b){
+        var dictionary = {};
+        console.log(a.length,b.length);
+        for(i = 0; i <  Math.min(a.length,b.length); i++){
+            dictionary[a[i]] = b[i];
+        }
+        console.log(dictionary);
+        allData[pid].push(dictionary);
+    }
+
+    function barPost(pid){
+        values = {}
+        allData[pid].forEach(function(entry){
+            for(var elem in entry){
+                values[elem] = [];
+            }
+        });
+        var labels = [];
+            for(var key in values){
+                labels[labels.length] = key;
+        }
+        labels.sort(function(a, b){return a-b});
+        data = [];
+        allData[pid].forEach(function(entry){
+            semiData = [];
+            labels.forEach(function(lb){
+                if(lb in entry){
+                    semiData.push(entry[lb]);
+                }
+                else {
+                    semiData.push(0);
+                }
+            });
+            data.push({label:""+data.length,data:semiData});
+        });
+        return {labels:labels, datasets:data};
+    }
+
+    function convertCJSscatter(a,b){
+        // Converts from [1],[0] to [{x: 1, y: 0}]
+        new_data = []
+        for(i = 0; i < Math.min(a.length,b.length); i++){
+            new_data.push({x: a[i],y:b[i]})
+        }
+        return new_data;
+    }
+
+    
+    
+    
+    function setType(pid){
+        tmpPID = getJSLibrary(pid);
+        type = tmpPID.setup();
+        var ctx = $("#chart"+pid);
+        charts[pid].destroy();
+        if(type=='l'){
+        $.each(datasets[pid], function(i, dataset){dataset.backgroundColor = randomColor(0.5);});
+        charts[pid] = new Chart(ctx, {type:'scatter',data: {datasets:datasets[pid]}});
+
+        } else if (type == 'b'){
+            allNew = barPost(pid);
+            $.each(allNew.datasets, function(i, dataset){dataset.backgroundColor = randomColor(0.5);});
+            charts[pid] = new Chart(ctx, {type:'bar',data: allNew});
+        }
+        
+    }
+
+</script>
 
 </div>
-</div>
+
 </div>
 
-    </div>
-  </div>
+</div>
 </div>
 
 </div>
@@ -11827,34 +11953,7 @@ $$ P(A) = \frac{Number~of~Favorable~Outcomes}{Total~Number~of~Outcomes}$$<h4 id=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse2">Code</a>
-        <a onclick="ace.edit('code2').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse2" class="panel-collapse collapse ">
-    <div id="code2" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [1/4,1/2,1,0]
-You pick an orange ball?
-You pick a golf ball?
-You pick a ball?
-You pick a golf ball that is red?
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
@@ -11894,7 +11993,8 @@ You pick a golf ball that is red?
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -11905,7 +12005,6 @@ You pick a golf ball that is red?
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -11988,31 +12087,7 @@ input[type=text].incorrect-quiz {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse3">Code</a>
-        <a onclick="ace.edit('code3').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse3" class="panel-collapse collapse ">
-    <div id="code3" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [1/4]
-What&#39;s the probability that you get 2 heads when you flip two coins?  
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
@@ -12043,7 +12118,8 @@ What&#39;s the probability that you get 2 heads when you flip two coins?
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12054,7 +12130,6 @@ What&#39;s the probability that you get 2 heads when you flip two coins?
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12143,31 +12218,7 @@ P(2~Heads) &= P(Heads~on~Coin~1) * P(Heads~on~Coin~2) \\
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse4">Code</a>
-        <a onclick="ace.edit('code4').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse4" class="panel-collapse collapse ">
-    <div id="code4" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [.5]
-What&#39;s the probability that you get one head and one tail when you flip two coins? 
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
@@ -12198,7 +12249,8 @@ What&#39;s the probability that you get one head and one tail when you flip two 
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12209,7 +12261,6 @@ What&#39;s the probability that you get one head and one tail when you flip two 
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12294,39 +12345,13 @@ Let the probability of getting a 1 be P(A), (P(A) = 1/6) and the probability of 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse21">Code</a>
-        <a onclick="ace.edit('code21').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse21" class="panel-collapse collapse ">
-    <div id="code21" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [0,2/6,1/36]
-1. What is the probability of rolling a 1 and a 2 on the same roll?
-2. What is the probability of rolling a 1 or a 2 on the same roll? 
-3. What is the probability of rolling a 1 on the first roll and a 2 on the second roll? 
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[21]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[5]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 
@@ -12357,7 +12382,8 @@ Let the probability of getting a 1 be P(A), (P(A) = 1/6) and the probability of 
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12368,7 +12394,6 @@ Let the probability of getting a 1 be P(A), (P(A) = 1/6) and the probability of 
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12448,37 +12473,13 @@ For any two events, $A$, and $B$:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse22">Code</a>
-        <a onclick="ace.edit('code22').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse22" class="panel-collapse collapse ">
-    <div id="code22" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [(5/6)**3]
-A die is rolled $3$ times. What is the probability that the face $1$ never appears in any of the rolls?
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[22]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 
@@ -12503,7 +12504,8 @@ A die is rolled $3$ times. What is the probability that the face $1$ never appea
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12514,7 +12516,6 @@ A die is rolled $3$ times. What is the probability that the face $1$ never appea
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12593,37 +12594,13 @@ $= \frac{5}{6} \times \frac{5}{6} \times \frac{5}{6} = (\frac{5}{6})^3  $</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse23">Code</a>
-        <a onclick="ace.edit('code23').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse23" class="panel-collapse collapse ">
-    <div id="code23" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [(1/2)**100]
-What is the chance that only faces $2, 4 \hbox { or } 6$ appear? 
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[23]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 
@@ -12648,7 +12625,8 @@ What is the chance that only faces $2, 4 \hbox { or } 6$ appear?
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12659,7 +12637,6 @@ What is the chance that only faces $2, 4 \hbox { or } 6$ appear?
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12736,37 +12713,13 @@ Therefore, chance that only $2, 4 \hbox { or } 6$ appear in $n$ rolls $= (\frac{
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse24">Code</a>
-        <a onclick="ace.edit('code24').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse24" class="panel-collapse collapse ">
-    <div id="code24" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [5/6]
-What is the probability that the two rolls had different faces?
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[24]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 
@@ -12791,7 +12744,8 @@ What is the probability that the two rolls had different faces?
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12802,7 +12756,6 @@ What is the probability that the two rolls had different faces?
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -12878,37 +12831,13 @@ The first roll can be any of $1,2,3,4,5 \hbox{ or } 6$. Hence, we will accept an
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
-    <div class="panel-group">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse25">Code</a>
-        <a onclick="ace.edit('code25').getSession().setMode('ace/mode/python')">Edit</a>
-      </h4>
-    </div>
-    <div id="collapse25" class="panel-collapse collapse ">
-    <div id="code25" style="max-height:300px">def f(x): return 1+1 </div>
-              <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">quiz</span> [1-(19/20)**5]
- What is the chance that a particular student is among the $5$ selected students? 
-</pre></div>
 
-</div>
-</div>
-</div>
-
-    </div>
-  </div>
-</div>
 
 <div class="output_wrapper">
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[25]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 
@@ -12933,7 +12862,8 @@ The first roll can be any of $1,2,3,4,5 \hbox{ or } 6$. Hence, we will accept an
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -12944,7 +12874,6 @@ The first roll can be any of $1,2,3,4,5 \hbox{ or } 6$. Hence, we will accept an
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
@@ -13080,18 +13009,19 @@ $$\Rightarrow \frac{364}{365} \times \frac{363}{365}$$<p></p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
+
     <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse41">Code</a>
-        <a onclick="ace.edit('code41').getSession().setMode('ace/mode/python')">Edit</a>
+        <a data-toggle="collapse" href="#collapse10">Code</a>
+        <a onclick="ace.edit('code10').getSession().setMode('ace/mode/python')">Edit</a>
       </h4>
     </div>
-    <div id="collapse41" class="panel-collapse collapse ">
-    <div id="code41" style="max-height:300px">def f(x): return 1+1 </div>
+    <div id="collapse10" class="panel-collapse collapse ">
+    <div id="code10" style="max-height:300px">def f(x): return 1+1 </div>
               <div class="input">
-<div class="prompt input_prompt">In&nbsp;[41]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">scipy.misc</span> <span class="k">as</span> <span class="nn">misc</span>
@@ -13111,6 +13041,7 @@ $$\Rightarrow \frac{364}{365} \times \frac{363}{365}$$<p></p>
     </div>
   </div>
 </div>
+
 
 <div class="output_wrapper">
 <div class="output">
@@ -13365,6 +13296,1793 @@ nBySJEmSJEmaYP8BFdgJNKujheYAAAAASUVORK5CYII=
 </div>
 
 </div>
+<div class="cell border-box-sizing code_cell rendered">
+
+
+    <div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" href="#collapse11">Code</a>
+        <a onclick="ace.edit('code11').getSession().setMode('ace/mode/python')">Edit</a>
+      </h4>
+    </div>
+    <div id="collapse11" class="panel-collapse collapse ">
+    <div id="code11" style="max-height:300px">def f(x): return 1+1 </div>
+              <div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">jsPlot</span> l [&#39;Beginning Range&#39;,0,100,5], [&#39;End of Range&#39;,10,100,5]
+
+def data(down, up):
+    if down &gt;= up:
+        down = 0
+    p = 1
+    x = [1]
+    y = [0]
+    for i in range(up):
+        p *= (366-i)/365
+        x.append(i)
+        y.append(1-p)
+    plot(x[down:],y[down:])
+    write(&quot;The probability that two people share a birthday in a room with &quot;+str(up)+&quot; people is &quot;+str(y[len(y)-1]))
+</pre></div>
+
+</div>
+</div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>l
+ [&#39;Beginning Range&#39;,0,100,5], [&#39;End of Range&#39;,10,100,5]
+1
+</pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt output_prompt">Out[11]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<script>"use strict";
+// Transcrypt'ed from Python, 2016-08-15 15:10:36
+function tmp1 () {
+	var __all__ = {};
+	var __world__ = __all__;
+	
+	// Nested object creator, part of the nesting may already exist and have attributes
+	var __nest__ = function (headObject, tailNames, value) {
+		// In some cases this will be a global object, e.g. 'window'
+		var current = headObject;
+		
+		if (tailNames != '') {	// Split on empty string doesn't give empty list
+			// Find the last already created object in tailNames
+			var tailChain = tailNames.split ('.');
+			var firstNewIndex = tailChain.length;
+			for (var index = 0; index < tailChain.length; index++) {
+				if (!current.hasOwnProperty (tailChain [index])) {
+					firstNewIndex = index;
+					break;
+				}
+				current = current [tailChain [index]];
+			}
+			
+			// Create the rest of the objects, if any
+			for (var index = firstNewIndex; index < tailChain.length; index++) {
+				current [tailChain [index]] = {};
+				current = current [tailChain [index]];
+			}
+		}
+		
+		// Insert it new attributes, it may have been created earlier and have other attributes
+		for (var attrib in value) {
+			current [attrib] = value [attrib];			
+		}		
+	};
+	__all__.__nest__ = __nest__;
+	
+	// Initialize module if not yet done and return its globals
+	var __init__ = function (module) {
+		if (!module.__inited__) {
+			module.__all__.__init__ (module.__all__);
+			module.__inited__ = true;
+		}
+		return module.__all__;
+	};
+	__all__.__init__ = __init__;
+	
+	// Since we want to assign functions, a = b.f should make b.f produce a bound function
+	// So __get__ should be called by a property rather then a function
+	// Factory __get__ creates one of three curried functions for func
+	// Which one is produced depends on what's to the left of the dot of the corresponding JavaScript property
+	var __get__ = function (self, func, quotedFuncName) {
+		if (self) {
+			if (self.hasOwnProperty ('__class__') || typeof self == 'string' || self instanceof String) {			// Object before the dot
+				if (quotedFuncName) {									// Memoize call since fcall is on, by installing bound function in instance
+					Object.defineProperty (self, quotedFuncName, {		// Will override the non-own property, next time it will be called directly
+						value: function () {							// So next time just call curry function that calls function
+							var args = [] .slice.apply (arguments);
+							return func.apply (null, [self] .concat (args));
+						},				
+						writable: true,
+						enumerable: true, configurable:true,
+						configurable: true
+					});
+				}
+				return function () {									// Return bound function, code dupplication for efficiency if no memoizing
+					var args = [] .slice.apply (arguments);				// So multilayer search prototype, apply __get__, call curry func that calls func
+					return func.apply (null, [self] .concat (args));
+				};
+			}
+			else {														// Class before the dot
+				return func;											// Return static method
+			}
+		}
+		else {															// Nothing before the dot
+			return func;												// Return free function
+		}
+	}
+	__all__.__get__ = __get__;
+			
+	// Class creator function
+	var __class__ = function (name, bases, extra) {
+		// Create class functor
+		var cls = function () {
+			var args = [] .slice.apply (arguments);
+			return cls.__new__ (args);
+		};
+		
+		// Copy methods, properties and static attributes from base classes to new class object
+		for (var index = bases.length - 1; index >= 0; index--) {	// Reversed order, since class vars of first base should win
+			var base = bases [index];
+			for (var attrib in base) {
+				var descrip = Object.getOwnPropertyDescriptor (base, attrib);
+				Object.defineProperty (cls, attrib, descrip);
+			}
+		}
+		
+		// Add class specific attributes to class object
+		cls.__name__ = name;
+		cls.__bases__ = bases;
+		
+		// Add own methods, properties and static attributes to class object
+		for (var attrib in extra) {
+			var descrip = Object.getOwnPropertyDescriptor (extra, attrib);
+			Object.defineProperty (cls, attrib, descrip);
+		}
+				
+		// Return class object
+		return cls;
+	};
+	__all__.__class__ = __class__;
+	
+	// Create mother of all classes		
+	var object = __all__.__class__ ('object', [], {
+		__init__: function (self) {},
+			
+		__name__: 'object',
+		__bases__: [],
+			
+		// Object creator function is inherited by all classes (??? Make global?)
+		__new__: function (args) {	// Args are just the constructor args		
+			// In JavaScript the Python class is the prototype of the Python object
+			// In this way methods and static attributes will be available both with a class and an object before the dot
+			// The descriptor produced by __get__ will return the right method flavor
+			var instance = Object.create (this, {__class__: {value: this, enumerable: true, configurable:true}});
+			
+			// Call constructor
+			this.__init__.apply (null, [instance] .concat (args));
+			
+			// Return instance			
+			return instance;
+		}	
+	});
+	__all__.object = object;
+	
+	// Define __pragma__ to preserve '<all>' and '</all>', since it's never generated as a function, must be done early, so here
+	var __pragma__ = function () {};
+	__all__.__pragma__ = __pragma__;
+	__nest__ (
+		__all__,
+		'org.transcrypt.__base__', {
+			__all__: {
+				__inited__: false,
+				__init__: function (__all__) {
+					var __Envir__ = __class__ ('__Envir__', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							self.transpiler_name = 'transcrypt';
+							self.transpiler_version = '3.5.202';
+							self.target_subdir = '__javascript__';
+						});}
+					});
+					var __envir__ = __Envir__ ();
+					__pragma__ ('<all>')
+						__all__.__Envir__ = __Envir__;
+						__all__.__envir__ = __envir__;
+					__pragma__ ('</all>')
+				}
+			}
+		}
+	);
+	__nest__ (
+		__all__,
+		'org.transcrypt.__standard__', {
+			__all__: {
+				__inited__: false,
+				__init__: function (__all__) {
+					var Exception = __class__ ('Exception', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							var args = tuple ([].slice.apply (arguments).slice (1));
+							self.args = args;
+						});},
+						get __repr__ () {return __get__ (this, function (self) {
+							if (len (self.args)) {
+								return '{}{}'.format (self.__class__.__name__, repr (tuple (self.args)));
+							}
+							else {
+								return '{}()'.format (self.__class__.__name__);
+							}
+						});},
+						get __str__ () {return __get__ (this, function (self) {
+							if (len (self.args) > 1) {
+								return str (tuple (self.args));
+							}
+							else {
+								if (len (self.args)) {
+									return str (self.args [0]);
+								}
+								else {
+									return '';
+								}
+							}
+						});}
+					});
+					var StopIteration = __class__ ('StopIteration', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							Exception.__init__ (self, 'Iterator exhausted');
+						});}
+					});
+					__all__.StopIteration = StopIteration;
+					var ValueError = __class__ ('ValueError', [Exception], {
+					});
+					var AssertionError = __class__ ('AssertionError', [Exception], {
+					});
+					var __sort__ = function (iterable, key, reverse) {
+						if (typeof key == 'undefined' || (key != null && key .__class__ == __kwargdict__)) {;
+							var key = null;
+						};
+						if (typeof reverse == 'undefined' || (reverse != null && reverse .__class__ == __kwargdict__)) {;
+							var reverse = false;
+						};
+						if (arguments.length) {
+							var __ilastarg0__ = arguments.length - 1;
+							if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+								var __allkwargs0__ = arguments [__ilastarg0__--];
+								for (var __attrib0__ in __allkwargs0__) {
+									switch (__attrib0__) {
+										case 'iterable': var iterable = __allkwargs0__ [__attrib0__]; break;
+										case 'key': var key = __allkwargs0__ [__attrib0__]; break;
+										case 'reverse': var reverse = __allkwargs0__ [__attrib0__]; break;
+									}
+								}
+							}
+						}
+						if (key) {
+							iterable.sort ((function __lambda__ (a, b) {
+								if (arguments.length) {
+									var __ilastarg0__ = arguments.length - 1;
+									if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+										var __allkwargs0__ = arguments [__ilastarg0__--];
+										for (var __attrib0__ in __allkwargs0__) {
+											switch (__attrib0__) {
+												case 'a': var a = __allkwargs0__ [__attrib0__]; break;
+												case 'b': var b = __allkwargs0__ [__attrib0__]; break;
+											}
+										}
+									}
+								}
+								return key (a) > key (b);
+							}));
+						}
+						else {
+							iterable.sort ();
+						}
+						if (reverse) {
+							iterable.reverse ();
+						}
+					};
+					var sorted = function (iterable, key, reverse) {
+						if (typeof key == 'undefined' || (key != null && key .__class__ == __kwargdict__)) {;
+							var key = null;
+						};
+						if (typeof reverse == 'undefined' || (reverse != null && reverse .__class__ == __kwargdict__)) {;
+							var reverse = false;
+						};
+						if (arguments.length) {
+							var __ilastarg0__ = arguments.length - 1;
+							if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+								var __allkwargs0__ = arguments [__ilastarg0__--];
+								for (var __attrib0__ in __allkwargs0__) {
+									switch (__attrib0__) {
+										case 'iterable': var iterable = __allkwargs0__ [__attrib0__]; break;
+										case 'key': var key = __allkwargs0__ [__attrib0__]; break;
+										case 'reverse': var reverse = __allkwargs0__ [__attrib0__]; break;
+									}
+								}
+							}
+						}
+						if (type (iterable) == dict) {
+							var result = copy (iterable.keys ());
+						}
+						else {
+							var result = copy (iterable);
+						}
+						__sort__ (result, key, reverse);
+						return result;
+					};
+					var map = function (func, iterable) {
+						return function () {
+							var __accu0__ = [];
+							var __iterable0__ = iterable;
+							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+								var item = __iterable0__ [__index0__];
+								__accu0__.append (func (item));
+							}
+							return __accu0__;
+						} ();
+					};
+					var filter = function (func, iterable) {
+						return function () {
+							var __accu0__ = [];
+							var __iterable0__ = iterable;
+							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+								var item = __iterable0__ [__index0__];
+								if (func (item)) {
+									__accu0__.append (item);
+								}
+							}
+							return __accu0__;
+						} ();
+					};
+					var __Terminal__ = __class__ ('__Terminal__', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							try {
+								self.element = document.getElementById ('__terminal__');
+							}
+							catch (__except__) {
+								self.element = null;
+							}
+							if (self.element) {
+								self.buffer = '';
+								self.element.style.overflowX = 'auto';
+								self.element.style.padding = '5px';
+								self.element.innerHTML = '_';
+							}
+						});},
+						get print () {return __get__ (this, function (self) {
+							var sep = ' ';
+							var end = '\n';
+							if (arguments.length) {
+								var __ilastarg0__ = arguments.length - 1;
+								if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+									var __allkwargs0__ = arguments [__ilastarg0__--];
+									for (var __attrib0__ in __allkwargs0__) {
+										switch (__attrib0__) {
+											case 'self': var self = __allkwargs0__ [__attrib0__]; break;
+											case 'sep': var sep = __allkwargs0__ [__attrib0__]; break;
+											case 'end': var end = __allkwargs0__ [__attrib0__]; break;
+										}
+									}
+								}
+								var args = tuple ([].slice.apply (arguments).slice (1, __ilastarg0__ + 1));
+							}
+							if (self.element) {
+								self.buffer = '{}{}{}'.format (self.buffer, sep.join (function () {
+									var __accu0__ = [];
+									var __iterable0__ = args;
+									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+										var arg = __iterable0__ [__index0__];
+										__accu0__.append (str (arg));
+									}
+									return __accu0__;
+								} ()), end).__getslice__ (-(4096), null, 1);
+								self.element.innerHTML = self.buffer.py_replace ('\n', '<br>');
+								self.element.scrollTop = self.element.scrollHeight;
+							}
+							else {
+								console.log (sep.join (args));
+							}
+						});},
+						get input () {return __get__ (this, function (self, question) {
+							if (arguments.length) {
+								var __ilastarg0__ = arguments.length - 1;
+								if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+									var __allkwargs0__ = arguments [__ilastarg0__--];
+									for (var __attrib0__ in __allkwargs0__) {
+										switch (__attrib0__) {
+											case 'self': var self = __allkwargs0__ [__attrib0__]; break;
+											case 'question': var question = __allkwargs0__ [__attrib0__]; break;
+										}
+									}
+								}
+							}
+							self.print ('{}_'.format (question), __kwargdict__ ({end: ''}));
+							try {
+								var answer = window.prompt (question);
+							}
+							catch (__except__) {
+								console.log ('Error: Blocking input not yet implemented outside browser');
+							}
+							self.buffer = self.buffer.__getslice__ (0, -(1), 1);
+							self.print (answer);
+							return answer;
+						});}
+					});
+					var __terminal__ = __Terminal__ ();
+					__pragma__ ('<all>')
+						__all__.AssertionError = AssertionError;
+						__all__.Exception = Exception;
+						__all__.StopIteration = StopIteration;
+						__all__.ValueError = ValueError;
+						__all__.__Terminal__ = __Terminal__;
+						__all__.__sort__ = __sort__;
+						__all__.__terminal__ = __terminal__;
+						__all__.filter = filter;
+						__all__.map = map;
+						__all__.sorted = sorted;
+					__pragma__ ('</all>')
+				}
+			}
+		}
+	);
+
+	// Initialize non-nested modules __base__ and __standard__ and make its names available directly and via __all__
+	// It can't do that itself, because it is a regular Python module
+	// The compiler recognizes its their namesand generates them inline rather than nesting them
+	// In this way it isn't needed to import them everywhere
+	 	
+	// __base__
+	
+	__nest__ (__all__, '', __init__ (__all__.org.transcrypt.__base__));
+	var __envir__ = __all__.__envir__;
+
+	// __standard__
+	
+	__nest__ (__all__, '', __init__ (__all__.org.transcrypt.__standard__));
+	
+	var Exception = __all__.Exception;
+	var StopIteration = __all__.StopIteration;
+	var ValueError = __all__.ValueError;
+	var AssertionError = __all__.AssertionError;
+	
+	var __sort__ = __all__.__sort__;
+	var sorted = __all__.sorted;
+	
+	var map = __all__.map;
+	var filter = __all__.filter;
+	
+	__all__.print = __all__.__terminal__.print;
+	__all__.input = __all__.__terminal__.input;
+	
+	var print = __all__.print;
+	var input = __all__.input;
+
+	// Complete __envir__, that was created in __base__, for non-stub mode
+	__envir__.executor_name = __envir__.transpiler_name;
+	
+	// Make make __main__ available in browser
+	var __main__ = {__file__: ''};
+	__all__.main = __main__;
+	
+	// Define current exception, there's at most one exception in the air at any time
+	var __except__ = null;
+	__all__.__except__ = __except__;
+		
+	// Define recognizable dictionary for **kwargs parameter
+	var __kwargdict__ = function (anObject) {
+		anObject.__class__ = __kwargdict__;	// This class needs no __name__
+		anObject.constructor = Object;
+		return anObject;
+	}
+	__all__.___kwargdict__ = __kwargdict__;
+	
+	// Property installer function, no member since that would bloat classes
+	var property = function (getter, setter) {	// Returns a property descriptor rather than a property
+		if (!setter) {	// ??? Make setter optional instead of dummy?
+			setter = function () {};
+		}
+		return {get: function () {return getter (this)}, set: function (value) {setter (this, value)}, enumerable: true, configurable:true};
+	}
+	__all__.property = property;
+	
+	// Assert function, call to it only generated when compiling with --dassert option
+	function assert (condition, message) {
+		if (!condition) {
+			if (message != undefined) {
+				throw AssertionError (message);
+			}
+			else {
+				throw AssertionError ();
+			}
+		}
+	}
+	
+	__all__.assert = assert;
+	
+	var __merge__ = function (object0, object1) {
+		var result = {};
+		for (var attrib in object0) {
+			result [attrib] = object0 [attrib];
+		}
+		for (var attrib in object1) {
+			result [attrib] = object1 [attrib];
+		}
+		return result;
+	}
+	__all__.__merge__ = __merge__;
+	
+	/* Not needed anymore?
+	// Make console.log understand apply
+	console.log.apply = function () {
+		print ([] .slice.apply (arguments) .slice (1));
+	};
+	*/
+
+	// Manipulating attributes by name
+	
+	var dir = function (obj) {
+		var aList = [];
+		for (var aKey in obj) {
+			aList.push (aKey);
+		}
+		aList.sort ();
+		return aList;
+	}
+	
+	var setattr = function (obj, name, value) {
+		obj [name] = value;
+	};
+		
+	__all__.setattr = setattr;
+	
+	var getattr = function (obj, name) {
+		return obj [name];
+	};
+	
+	__all__.getattr= getattr
+	
+	var hasattr = function (obj, name) {
+		return name in obj;
+	};
+	__all__.hasattr = hasattr;
+	
+	var delattr = function (obj, name) {
+		delete obj [name];
+	};
+	__all__.delattr = (delattr);
+	
+	// In function, used to mimic Python's in operator
+	var __in__ = function (element, container) {
+		if (type (container) == dict) {
+			return container.keys () .indexOf (element) > -1;
+		}
+		else {
+			return container.indexOf (element) > -1;
+		}
+	}
+	__all__.__in__ = __in__;
+	
+	// Find out if an attribute is special
+	var __specialattrib__ = function (attrib) {
+		return (attrib.startswith ('__') && attrib.endswith ('__')) || attrib == 'constructor' || attrib.startswith ('py_');
+	}
+	__all__.__specialattrib__ = __specialattrib__;
+		
+	// Len function for any object
+	var len = function (anObject) {
+		if (anObject) {
+			var l = anObject.length;
+			if (l == undefined) {
+				var result = 0;
+				for (var attrib in anObject) {
+					if (!__specialattrib__ (attrib)) {
+						result++;
+					}
+				}
+				return result;
+			}
+			else {
+				return l;
+			}
+		}
+		else {
+			return 0;
+		}
+	}
+	__all__.len = len;
+	
+	var bool = function (any) {	// Subtly different from __ (any), always truly returns a bool, rather than something truthy or falsy
+		return typeof any == 'boolean' ? any : typeof any == 'number' ? any != 0 : len (any) ? true : false;
+	}
+	bool.__name__ = 'bool'	// So it can be used as a type with a name
+	__all__.bool = bool;
+	
+	var float = function (any) {
+		if (isNaN (any)) {
+			throw ('ValueError');	// !!! Turn into real value error
+		}
+		else {
+			return +any;
+		}
+	}
+	float.__name__ = 'float'
+	__all__.float = float;
+	
+	var int = function (any) {
+		return float (any) | 0
+	}
+	int.__name__ = 'int';
+	__all__.int = int;
+	
+	var type = function (anObject) {
+		try {
+			var result = anObject.__class__;
+			return result;
+		}
+		catch (exception) {
+			var aType = typeof anObject;
+			if (aType == 'boolean') {
+				return bool;
+			}
+			else if (aType == 'number') {
+				if (anObject % 1 == 0) {
+					return int;
+				}
+				else {
+					return float;
+				}				
+			}
+			else {
+				return aType;
+			}
+		}
+	}
+	__all__.type = type;
+	
+	var isinstance = function (anObject, classinfo) {
+		function isA (queryClass) {
+			if (queryClass == classinfo) {
+				return true;
+			}
+			for (var index = 0; index < queryClass.__bases__.length; index++) {
+				if (isA (queryClass.__bases__ [index], classinfo)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		try {
+			return '__class__' in anObject ? isA (anObject.__class__) : anObject instanceof classinfo;
+		}
+		catch (exception) {
+			console.log (exception);
+			console.dir (anObject);
+		}
+	};
+	__all__.isinstance = isinstance;
+	
+	// Truthyness conversion
+	function __ (any) {	// Subtly different from bool (any), __ ([1, 2, 3]) returns [1, 2, 3], needed for nonempty selection: l = list1 or list2
+		return ['boolean', 'number'] .indexOf (typeof (any)) >= 0 ? any : len (any) ? any : false;
+	}
+	__all__.__ = __;
+	
+	// Repr function uses __repr__ method, then __str__ then toString
+	var repr = function (anObject) {
+		try {
+			return anObject.__repr__ ();
+		}
+		catch (exception) {
+			try {
+				return anObject.__str__ ();
+			}
+			catch (exception) {	// It was a dict in Python, so an Object in JavaScript
+				try {
+					if (anObject.constructor == Object) {
+						var result = '{';
+						var comma = false;
+						for (var attrib in anObject) {
+							if (!__specialattrib__ (attrib)) {
+								if (attrib.isnumeric ()) {
+									var attribRepr = attrib;				// If key can be interpreted as numerical, we make it numerical 
+								}											// So we accept that '1' is misrepresented as 1
+								else {
+									var attribRepr = '\'' + attrib + '\'';	// Alpha key in dict
+								}
+								
+								if (comma) {
+									result += ', ';
+								}
+								else {
+									comma = true;
+								}
+								try {
+									result += attribRepr + ': ' + anObject [attrib] .__repr__ ();
+								}
+								catch (exception) {
+									result += attribRepr + ': ' + anObject [attrib] .toString ();
+								}
+							}
+						}
+						result += '}';
+						return result;					
+					}
+					else {
+						return typeof anObject == 'boolean' ? anObject.toString () .capitalize () : anObject.toString ();
+					}
+				}
+				catch (exception) {
+					console.log ('ERROR: Could not evaluate repr (<object of type ' + typeof anObject + '>)');
+					return '???';
+				}
+			}
+		}
+	}
+	__all__.repr = repr;
+	
+	// Char from Unicode or ASCII
+	var chr = function (charCode) {
+		return String.fromCharCode (charCode);
+	}
+	__all__.chr = chr;
+
+	// Unicode or ASCII from char
+	var ord = function (aChar) {
+		return aChar.charCodeAt (0);
+	}
+	__all__.org = ord;
+	
+	// Maximum of n numbers
+	var max = Math.max;
+	__all__.max = max;
+	
+	// Minimum of n numbers
+	var min = Math.min;
+	__all__.min = min;
+	
+	// Absolute value
+	var abs = Math.abs;
+	__all__.abs = abs;
+				
+	// Iterator protocol functions
+	
+	function wrap_py_next () {		// Add as 'next' method to make Python iterator JavaScript compatible
+		var result = this.__next__ ();
+		return {value: result, done: result == undefined};		
+	}
+	
+	function wrap_js_next () {		// Add as '__next__' method to make JavaScript iterator Python compatible
+		var result = this.next ();
+		if (result.done) {
+			throw StopIteration ();
+		}
+		else {
+			return result.value;
+		}
+	}
+	
+	function py_iter (iterable) {	// Produces universal iterator with Python '__next__' as well as JavaScript 'next'
+		if ('__iter__' in iterable) {	// It's a Python iterable (incl. JavaScript Arrays and strings)
+			var iterator = iterable.__iter__ ();
+			iterator.next = wrap_py_next;
+			return iterator;
+		}
+		else if ('selector' in iterable) { // Assume it's a JQuery iterator
+			var iterator = list (iterable) .__iter__ ();
+			iterator.next = wrap_py_next;
+			return iterator;
+		}
+		else if ('next' in iterable) {	// It's a JavaScript generator
+			// It should have an iterator field, but doesn't in Chrome
+			// So we just return the generator itself, which is both an iterable and an iterator
+			iterable.__next__ = wrap_js_next;
+			return iterable;
+		}
+		else {
+			return null;
+		}
+	}
+	__all__.py_iter = py_iter;
+	
+	function py_next (iterator) {				// Called only in a Python context, could receive Python or JavaScript iterator
+		try {									// Primarily assume Python iterator, for max speed
+			var result = iterator.__next__ ();
+		}
+		catch (exception) {						// JavaScript iterators are the exception here
+			var result = iterator.next ();
+			if (result.done) {
+				throw StopIteration ();
+			}
+			else {
+				return result.value;
+			}
+		}	
+		if (result == undefined) {
+			throw StopIteration ();
+		}
+		return result;
+	}
+	__all__.py_next = py_next;
+	
+	function __SeqIterator__ (iterable) {
+		this.iterable = iterable;
+		this.index = 0;
+	}
+	
+	__all__.__SeqIterator__ = __SeqIterator__;
+	
+	__SeqIterator__.prototype.__iter__ = function () {
+		return this;
+	}
+	
+	__SeqIterator__.prototype.__next__ = function () {
+		return this.iterable [this.index++];
+	}
+	
+	__SeqIterator__.prototype.next = wrap_py_next;
+	
+	function __KeyIterator__ (iterable) {
+		this.iterable = iterable;
+		this.index = 0;
+	}
+
+	__all__.__KeyIterator__ = __KeyIterator__;
+	
+	__KeyIterator__.prototype.__iter__ = function () {
+		return this;
+	}
+	
+	__KeyIterator__.prototype.__next__ = function () {
+		return this.iterable.keys () [this.index++];
+	}
+			
+	__KeyIterator__.prototype.next = wrap_py_next;
+	
+	// Reversed function for arrays
+	var py_reversed = function (iterable) {
+		iterable = iterable.slice ();
+		iterable.reverse ();
+		return iterable;
+	}
+	__all__.py_reversed = py_reversed;
+	
+	// Zip method for arrays
+	var zip = function () {
+		var args = [] .slice.call (arguments);
+		var shortest = args.length == 0 ? [] : args.reduce (	// Find shortest array in arguments
+			function (array0, array1) {
+				return array0.length < array1.length ? array0 : array1;
+			}
+		);
+		return shortest.map (					// Map each element of shortest array
+			function (current, index) {			// To the result of this function
+				return args.map (				// Map each array in arguments
+					function (current) {		// To the result of this function
+						return current [index]; // Namely it's index't entry
+					}
+				);
+			}
+		);
+	}
+	__all__.zip = zip;
+	
+	// Range method, returning an array
+	function range (start, stop, step) {
+		if (stop == undefined) {
+			// one param defined
+			stop = start;
+			start = 0;
+		}
+		if (step == undefined) {
+			step = 1;
+		}
+		if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
+			return [];
+		}
+		var result = [];
+		for (var i = start; step > 0 ? i < stop : i > stop; i += step) {
+			result.push(i);
+		}
+		return result;
+	};
+	__all__.range = range;
+	
+	// Any, all and sum
+	
+	function any (iterable) {
+		for (var index = 0; index < iterable.length; index++) {
+			if (bool (iterable [index])) {
+				return true;
+			}
+		}
+		return false;
+	}
+	function all (iterable) {
+		for (var index = 0; index < iterable.length; index++) {
+			if (! bool (iterable [index])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	function sum (iterable) {
+		var result = 0;
+		for (var index = 0; index < iterable.length; index++) {
+			result += iterable [index];
+		}
+		return result;
+	}
+
+	__all__.any = any;
+	__all__.all = all;
+	__all__.sum = sum;
+	
+	// Enumerate method, returning a zipped list
+	function enumerate (iterable) {
+		return zip (range (len (iterable)), iterable);
+	}
+	__all__.enumerate = enumerate;
+		
+	// Shallow and deepcopy
+	
+	function copy (anObject) {
+		if (anObject == null || typeof anObject == "object") {
+			return anObject;
+		}
+		else {
+			var result = {}
+			for (var attrib in obj) {
+				if (anObject.hasOwnProperty (attrib)) {
+					result [attrib] = anObject [attrib];
+				}
+			}
+			return result;
+		}
+	}
+	__all__.copy = copy;
+	
+	function deepcopy (anObject) {
+		if (anObject == null || typeof anObject == "object") {
+			return anObject;
+		}
+		else {
+			var result = {}
+			for (var attrib in obj) {
+				if (anObject.hasOwnProperty (attrib)) {
+					result [attrib] = deepcopy (anObject [attrib]);
+				}
+			}
+			return result;
+		}
+	}
+	__all__.deepcopy = deepcopy;
+		
+	// List extensions to Array
+	
+	function list (iterable) {										// All such creators should be callable without new
+		var instance = iterable ? [] .slice.apply (iterable) : [];	// Spread iterable, n.b. array.slice (), so array before dot
+		// Sort is the normal JavaScript sort, Python sort is a non-member function
+		return instance;
+	}
+	__all__.list = list;
+	Array.prototype.__class__ = list;	// All arrays are lists (not only if constructed by the list ctor), unless constructed otherwise
+	list.__name__ = 'list';
+	
+	/*
+	Array.from = function (iterator) { // !!! remove
+		result = [];
+		for (item of iterator) {
+			result.push (item);
+		}
+		return result;
+	}
+	*/
+	
+	Array.prototype.__iter__ = function () {
+		return new __SeqIterator__ (this);
+	}
+	
+	Array.prototype.__getslice__ = function (start, stop, step) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+		
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+		
+		var result = list ([]);
+		for (var index = start; index < stop; index += step) {
+			result.push (this [index]);
+		}
+		
+		return result;
+	}
+		
+	Array.prototype.__setslice__ = function (start, stop, step, source) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+			
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+			
+		if (step == null) {	// Assign to 'ordinary' slice, replace subsequence
+			Array.prototype.splice.apply (this, [start, stop - start] .concat (source)) 
+		}
+		else {				// Assign to extended slice, replace designated items one by one
+			var sourceIndex = 0;
+			for (var targetIndex = start; targetIndex < stop; targetIndex += step) {
+				this [targetIndex] = source [sourceIndex++];
+			}
+		}
+	}
+	
+	Array.prototype.__repr__ = function () {
+		if (this.__class__ == set && !this.length) {
+			return 'set()';
+		}
+		
+		var result = !this.__class__ || this.__class__ == list ? '[' : this.__class__ == tuple ? '(' : '{';
+		
+		for (var index = 0; index < this.length; index++) {
+			if (index) {
+				result += ', ';
+			}
+			try {
+				result += this [index] .__repr__ ();
+			}
+			catch (exception) {
+				result += this [index] .toString ();
+			}
+		}
+		
+		if (this.__class__ == tuple && this.length == 1) {
+			result += ',';
+		}
+		
+		result += !this.__class__ || this.__class__ == list ? ']' : this.__class__ == tuple ? ')' : '}';;
+		return result;
+	};
+	
+	Array.prototype.__str__ = Array.prototype.__repr__;
+	
+	Array.prototype.append = function (element) {
+		this.push (element);
+	};
+
+	Array.prototype.clear = function () {
+		this.length = 0;
+	};
+	
+	Array.prototype.extend = function (aList) {
+		this.push.apply (this, aList);
+	};
+	
+	Array.prototype.insert = function (index, element) {
+		this.splice (index, 0, element);
+	};
+
+	Array.prototype.remove = function (element) {
+		var index = this.indexOf (element);
+		if (index == -1) {
+			throw ('KeyError');
+		}
+		this.splice (index, 1);
+	};
+
+	Array.prototype.index = function (element) {
+		return this.indexOf (element)
+	};
+	
+	Array.prototype.py_pop = function (index) {
+		if (index == undefined) {
+			return this.pop ()	// Remove last element
+		}
+		else {
+			return this.splice (index, 1) [0];
+		}
+	};	
+	
+	Array.prototype.py_sort = function () {
+		__sort__.apply  (null, [this].concat ([] .slice.apply (arguments)));	// Can't work directly with arguments
+		// Python params: (iterable, key = None, reverse = False)
+		// py_sort is called with the Transcrypt kwargs mechanism, and just passes the params on to __sort__
+		// __sort__ is def'ed with the Transcrypt kwargs mechanism
+	};
+	
+	Array.prototype.__add__ = function (aList) {
+		return list (this.concat (aList))
+	}
+	
+	Array.prototype.__mul__ = function (scalar) {
+		var result = this;
+		for (var i = 1; i < scalar; i++) {
+			result = result.concat (this);
+		}
+		return result;
+	}
+	
+	Array.prototype.__rmul__ = Array.prototype.__mul__;
+		
+	// Tuple extensions to Array
+	
+	function tuple (iterable) {
+		var instance = iterable ? [] .slice.apply (iterable) : [];
+		instance.__class__ = tuple;	// Not all arrays are tuples
+		return instance;
+	}
+	__all__.tuple = tuple;
+	tuple.__name__ = 'tuple';
+	
+	// Set extensions to Array
+	// N.B. Since sets are unordered, set operations will occasionally alter the 'this' array by sorting it
+		
+	function set (iterable) {
+		var instance = [];
+		if (iterable) {
+			for (var index = 0; index < iterable.length; index++) {
+				instance.add (iterable [index]);
+			}
+			
+			
+		}
+		instance.__class__ = set;	// Not all arrays are sets
+		return instance;
+	}
+	__all__.set = set;
+	set.__name__ = 'set';
+	
+	Array.prototype.__bindexOf__ = function (element) {	// Used to turn O (n^2) into O (n log n)
+	// Since sorting is lex, compare has to be lex. This also allows for mixed lists
+	
+		element += '';
+	
+		var mindex = 0;
+		var maxdex = this.length - 1;
+			 
+		while (mindex <= maxdex) {
+			var index = (mindex + maxdex) / 2 | 0;
+			var middle = this [index] + '';
+	 
+			if (middle < element) {
+				mindex = index + 1;
+			}
+			else if (middle > element) {
+				maxdex = index - 1;
+			}
+			else {
+				return index;
+			}
+		}
+	 
+		return -1;
+	}
+	
+	Array.prototype.add = function (element) {		
+		if (this.indexOf (element) == -1) {	// Avoid duplicates in set
+			this.push (element);
+		}
+	};
+	
+	Array.prototype.discard = function (element) {
+		var index = this.indexOf (element);
+		if (index != -1) {
+			this.splice (index, 1);
+		}
+	};
+	
+	Array.prototype.isdisjoint = function (other) {
+		this.sort ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) != -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.issuperset = function (other) {
+		this.sort ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) == -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.issubset = function (other) {
+		return set (other.slice ()) .issuperset (this);	// Sort copy of 'other', not 'other' itself, since it may be an ordered sequence
+	};
+	
+	Array.prototype.union = function (other) {
+		var result = set (this.slice () .sort ());
+		for (var i = 0; i < other.length; i++) {
+			if (result.__bindexOf__ (other [i]) == -1) {
+				result.push (other [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.intersection = function (other) {
+		this.sort ();
+		var result = set ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) != -1) {
+				result.push (other [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.difference = function (other) {
+		var sother = set (other.slice () .sort ());
+		var result = set ();
+		for (var i = 0; i < this.length; i++) {
+			if (sother.__bindexOf__ (this [i]) == -1) {
+				result.push (this [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.symmetric_difference = function (other) {
+		return this.union (other) .difference (this.intersection (other));
+	};
+	
+	Array.prototype.update = function () {	// O (n)
+		var updated = [] .concat.apply (this.slice (), arguments) .sort ();		
+		this.clear ();
+		for (var i = 0; i < updated.length; i++) {
+			if (updated [i] != updated [i - 1]) {
+				this.push (updated [i]);
+			}
+		}
+	};
+	
+	Array.prototype.__eq__ = function (other) {	// Also used for list
+		if (this.length != other.length) {
+			return false;
+		}
+		if (this.__class__ == set) {
+			this.sort ();
+			other.sort ();
+		}	
+		for (var i = 0; i < this.length; i++) {
+			if (this [i] != other [i]) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.__ne__ = function (other) {	// Also used for list
+		return !this.__eq__ (other);
+	}
+		
+	Array.prototype.__le__ = function (other) {
+		return this.issubset (other);
+	}
+		
+	Array.prototype.__ge__ = function (other) {
+		return this.issuperset (other);
+	}
+		
+	Array.prototype.__lt__ = function (other) {
+		return this.issubset (other) && !this.issuperset (other);
+	}
+		
+	Array.prototype.__gt__ = function (other) {
+		return this.issuperset (other) && !this.issubset (other);
+	}
+	
+	// Dict extensions to object
+	
+	function __keyIterator__ () {
+		return new __KeyIterator__ (this);
+	}
+	
+	function __keys__ () {
+		var keys = []
+		for (var attrib in this) {
+			if (!__specialattrib__ (attrib)) {
+				keys.push (attrib);
+			}     
+		}
+		return keys;
+	}
+		
+	function __items__ () {
+		var items = []
+		for (var attrib in this) {
+			if (!__specialattrib__ (attrib)) {
+				items.push ([attrib, this [attrib]]);
+			}     
+		}
+		return items;
+	}
+		
+	function __del__ (key) {
+		delete this [key];
+	}
+	
+	function __clear__ () {
+		for (var attrib in this) {
+			delete this [attrib];
+		}
+	}
+	
+	function __setdefault__ (aKey, aDefault) {
+		var result = this [aKey];
+		return result != undefined ? 
+			result :
+			aDefault != undefined ?
+				aDefault :
+				null;
+	}
+	
+	function dict (objectOrPairs) {
+		if (!objectOrPairs || objectOrPairs instanceof Array) {	// It's undefined or an array of pairs
+			var instance = {};
+			if (objectOrPairs) {
+				for (var index = 0; index < objectOrPairs.length; index++) {
+					var pair = objectOrPairs [index];
+					instance [pair [0]] = pair [1];
+				}
+			}
+		}
+		else {													// It's a JavaScript object literal
+			var instance = objectOrPairs;
+		}
+			
+		// Trancrypt interprets e.g. {aKey: 'aValue'} as a Python dict literal rather than a JavaScript object literal
+		// So dict literals rather than bare Object literals will be passed to JavaScript libraries
+		// Some JavaScript libraries call all enumerable callable properties of an object that's passed to them
+		// So the properties of a dict should be non-enumerable
+		Object.defineProperty (instance, '__class__', {value: dict, enumerable: false, writable: true});
+		Object.defineProperty (instance, 'keys', {value: __keys__, enumerable: false});
+		Object.defineProperty (instance, '__iter__', {value: __keyIterator__, enumerable: false});
+		Object.defineProperty (instance, 'items', {value: __items__, enumerable: false});		
+		Object.defineProperty (instance, 'del', {value: __del__, enumerable: false});
+		Object.defineProperty (instance, 'clear', {value: __clear__, enumerable: false});
+		Object.defineProperty (instance, 'setdefault', {value: __setdefault__, enumerable: false});
+		
+		return instance;
+	}
+	__all__.dict = dict;
+	dict.__name__ = 'dict';
+	
+	// String extensions
+	
+	function str (stringable) {
+		try {
+			return stringable.__str__ ();
+		}
+		catch (exception) {
+			return new String (stringable);
+		}
+	}
+	__all__.str = str;	
+	
+	String.prototype.__class__ = str;	// All strings are str
+	str.__name__ = 'str';
+	
+	String.prototype.__iter__ = function () {
+		return new __SeqIterator__ (this);
+	}
+		
+	String.prototype.__repr__ = function () {
+		return (this.indexOf ('\'') == -1 ? '\'' + this + '\'' : '"' + this + '"') .replace ('\n', '\\n');
+	};
+	
+	String.prototype.__str__ = function () {
+		return this;
+	};
+	
+	String.prototype.capitalize = function () {
+		return this.charAt (0).toUpperCase () + this.slice (1);
+	};
+	
+	String.prototype.endswith = function (suffix) {
+		return suffix == '' || this.slice (-suffix.length) == suffix;
+	};
+	
+	String.prototype.find  = function (sub, start) {
+		return this.indexOf (sub, start);
+	};
+	
+	String.prototype.__getslice__ = function (start, stop, step) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+		
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+		
+		var result = '';
+		if (step == 1) {
+			result = this.substring (start, stop);
+		}
+		else {
+			for (var index = start; index < stop; index += step) {
+				result = result.concat (this.charAt(index));
+			}
+		}
+		return result;
+	}
+	
+	// Since it's worthwhile for the 'format' function to be able to deal with *args, it is defined as a property
+	// __get__ will produce a bound function if there's something before the dot
+	// Since a call using *args is compiled to e.g. <object>.<function>.apply (null, args), the function has to be bound already
+	// Otherwise it will never be, because of the null argument
+	// Using 'this' rather than 'null' contradicts the requirement to be able to pass bound functions around
+	// The object 'before the dot' won't be available at call time in that case, unless implicitly via the function bound to it
+	// While for Python methods this mechanism is generated by the compiler, for JavaScript methods it has to be provided manually
+	// Call memoizing is unattractive here, since every string would then have to hold a reference to a bound format method
+	Object.defineProperty (String.prototype, 'format', {
+		get: function () {return __get__ (this, function (self) {
+			var args = tuple ([] .slice.apply (arguments).slice (1));			
+			var autoIndex = 0;
+			return self.replace (/\{(\w*)\}/g, function (match, key) { 
+				if (key == '') {
+					key = autoIndex++;
+				}
+				if (key == +key) {	// So key is numerical
+					return args [key] == undefined ? match : args [key];
+				}
+				else {				// Key is a string
+					for (var index = 0; index < args.length; index++) {
+						// Find first 'dict' that has that key and the right field
+						if (typeof args [index] == 'object' && args [index][key] != undefined) {
+							return args [index][key];	// Return that field field
+						}
+					}
+					return match;
+				}
+			});
+		});},
+		enumerable: true, configurable:true
+	});
+	
+	String.prototype.isnumeric = function () {
+		return !isNaN (parseFloat (this)) && isFinite (this);
+	};
+	
+	String.prototype.join = function (strings) {
+		return strings.join (this);
+	};
+	
+	String.prototype.lower = function () {
+		return this.toLowerCase ();
+	};
+	
+	String.prototype.py_replace = function (old, aNew, maxreplace) {
+		return this.split (old, maxreplace) .join (aNew);
+	};
+	
+	String.prototype.lstrip = function () {
+		return this.replace (/^\s*/g, '');
+	};
+	
+	String.prototype.rfind = function (sub, start) {
+		return this.lastIndexOf (sub, start);
+	};
+	
+	String.prototype.rsplit = function (sep, maxsplit) {
+		var split = this.split (sep || /s+/);
+		return maxsplit ? [ split.slice (0, -maxsplit) .join (sep) ].concat (split.slice (-maxsplit)) : split;
+	};
+	
+	String.prototype.rstrip = function () {
+		return this.replace (/\s*$/g, '');
+	};
+	
+	String.prototype.py_split = function (sep, maxsplit) {
+		if (!sep) {
+			sep = ' ';
+		}
+		return this.split (sep || /s+/, maxsplit);
+	};
+	
+	String.prototype.startswith = function (prefix) {
+		return this.indexOf (prefix) == 0;
+	};
+	
+	String.prototype.strip = function () {
+		return this.trim ();
+	};
+		
+	String.prototype.upper = function () {
+		return this.toUpperCase ();
+	};
+	
+	String.prototype.__mul__ = function (scalar) {
+		var result = this;
+		for (var i = 1; i < scalar; i++) {
+			result = result + this;
+		}
+		return result;
+	}
+	
+	String.prototype.__rmul__ = String.prototype.__mul__;
+	
+	// Operator overloading, only the ones that make most sense in matrix operations
+	
+	var __neg__ = function (a) {
+		if (typeof a == 'object' && '__neg__' in a) {
+			return a.__neg__ ();
+		}
+		else {
+			return -a;
+		}
+	};  
+	__all__.__neg__ = __neg__;
+	
+	var __matmul__ = function (a, b) {
+		return a.__matmul__ (b);
+	};  
+	__all__.__matmul__ = __matmul__;
+	
+	var __mul__ = function (a, b) {
+		if (typeof a == 'object' && '__mul__' in a) {
+			return a.__mul__ (b);
+		}
+		else if (typeof b == 'object' && '__rmul__' in b) {
+			return b.__rmul__ (a);
+		}
+		else if (typeof a == 'string') {
+			return a.__mul__ (b);
+		}
+		else if (typeof b == 'string') {
+			return b.__rmul__ (a);
+		}
+		else {
+			return a * b;
+		}
+	};  
+	__all__.__mul__ = __mul__;
+	
+	var __div__ = function (a, b) {
+		if (typeof a == 'object' && '__div__' in a) {
+			return a.__div__ (b);
+		}
+		else if (typeof b == 'object' && '__rdiv__' in b) {
+			return b.__rdiv__ (a);
+		}
+		else {
+			return a / b;
+		}
+	};  
+	__all__.__div__ = __div__;
+	
+	var __add__ = function (a, b) {
+		if (typeof a == 'object' && '__add__' in a) {
+			return a.__add__ (b);
+		}
+		else if (typeof b == 'object' && '__radd__' in b) {
+			return b.__radd__ (a);
+		}
+		else {
+			return a + b;
+		}
+	};  
+	__all__.__add__ = __add__;
+	
+	var __sub__ = function (a, b) {
+		if (typeof a == 'object' && '__sub__' in a) {
+			return a.__sub__ (b);
+		}
+		else if (typeof b == 'object' && '__rsub__' in b) {
+			return b.__rsub__ (a);
+		}
+		else {
+			return a - b;
+		}
+	};  
+	__all__.__sub__ = __sub__;
+	
+	var __eq__ = function (a, b) {
+		if (typeof a == 'object' && '__eq__' in a) {
+			return a.__eq__ (b);
+		}
+		else {
+			return a == b
+		}
+	};
+	__all__.__eq__ = __eq__;
+		
+	var __ne__ = function (a, b) {
+		if (typeof a == 'object' && '__ne__' in a) {
+			return a.__ne__ (b);
+		}
+		else {
+			return a != b
+		}
+	};
+	__all__.__ne__ = __ne__;
+		
+	var __lt__ = function (a, b) {
+		if (typeof a == 'object' && '__lt__' in a) {
+			return a.__lt__ (b);
+		}
+		else {
+			return a < b
+		}
+	};
+	__all__.__lt__ = __lt__;
+		
+	var __le__ = function (a, b) {
+		if (typeof a == 'object' && '__le__' in a) {
+			return a.__le__ (b);
+		}
+		else {
+			return a <= b
+		}
+	};
+	__all__.__le__ = __le__;
+		
+	var __gt__ = function (a, b) {
+		if (typeof a == 'object' && '__gt__' in a) {
+			return a.__gt__ (b);
+		}
+		else {
+			return a > b
+		}
+	};
+	__all__.__gt__ = __gt__;
+		
+	var __ge__ = function (a, b) {
+		if (typeof a == 'object' && '__ge__' in a) {
+			return a.__ge__ (b);
+		}
+		else {
+			return a >= b
+		}
+	};
+	__all__.__ge__ = __ge__;
+		
+	var __getitem__ = function (container, key) {
+		if (typeof container == 'object' && '__getitem__' in container) {
+			return container.__getitem__ (key);
+		}
+		else {
+			return container [key];
+		}
+	};
+	__all__.__getitem__ = __getitem__;
+
+	var __setitem__ = function (container, key, value) {
+		if (typeof container == 'object' && '__setitem__' in container) {
+			container.__setitem__ (key, value);
+		}
+		else {
+			container [key] = value;
+		}
+	};
+	__all__.__setitem__ = __setitem__;
+
+	var __getslice__ = function (container, lower, upper, step) {
+		if (typeof container == 'object' && '__getitem__' in container) {
+			return container.__getitem__ ([lower, upper, step]);
+		}
+		else {
+			return container.__getslice__ (lower, upper, step);
+		}
+	};
+	__all__.__getslice__ = __getslice__;
+
+	var __setslice__ = function (container, lower, upper, step, value) {
+		if (typeof container == 'object' && '__setitem__' in container) {
+			container.__setitem__ ([lower, upper, step], value);
+		}
+		else {
+			container.__setslice__ (lower, upper, step, value);
+		}
+	};
+	__all__.__setslice__ = __setslice__;
+
+	var __call__ = function (/* <callee>, <params>* */) {
+		var args = [] .slice.apply (arguments)
+		if (typeof args [0] == 'object' && '__call__' in args [0]) {
+			return args [0] .__call__ .apply (null,  args.slice (1));
+		}
+		else {
+			return args [0] .apply (null, args.slice (1));
+		}		
+	};
+	__all__.__call__ = __call__;
+
+	(function () {
+		var __symbols__ = ['e5'];
+		var math = Math;
+		var setup = function () {
+			return 'l';
+		};
+		var inputs = function () {
+			return list ([list (['Beginning Range', 0, 100, 5]), list (['End of Range', 10, 100, 5])]);
+		};
+		var data = function (down, up) {
+			if (down >= up) {
+				var down = 0;
+			}
+			var p = 1;
+			var x = list ([1]);
+			var y = list ([0]);
+			for (var i = 0; i < up; i++) {
+				p *= (366 - i) / 365;
+				x.append (i);
+				y.append (1 - p);
+			}
+			plot (1, x.__getslice__ (down, null, 1), y.__getslice__ (down, null, 1));
+			write (1, (('The probability that two people share a birthday in a room with ' + str (up)) + ' people is ') + str (y [len (y) - 1]));
+		};
+		__pragma__ ('<all>')
+			__all__.data = data;
+			__all__.inputs = inputs;
+			__all__.math = math;
+			__all__.setup = setup;
+		__pragma__ ('</all>')
+	}) ();
+	return __all__;
+}
+window ['tmp1'] = tmp1 ();
+</script>
+
+    <div class="container-fluid">
+    <div class="col-md-9">
+    <div id="console1"></div>
+    <canvas id="chart1" >
+    </canvas>
+    </div>
+    <div id="sliders1" class="col-md-3">
+    </div>
+    </div>
+    <script type="text/javascript">
+            addAllSliders(1);
+            charts[1] = new Chart($("#chart1"));
+            update(1);
+    </script>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -13377,18 +15095,19 @@ nBySJEmSJEmaYP8BFdgJNKujheYAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
+
     <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse42">Code</a>
-        <a onclick="ace.edit('code42').getSession().setMode('ace/mode/python')">Edit</a>
+        <a data-toggle="collapse" href="#collapse12">Code</a>
+        <a onclick="ace.edit('code12').getSession().setMode('ace/mode/python')">Edit</a>
       </h4>
     </div>
-    <div id="collapse42" class="panel-collapse collapse ">
-    <div id="code42" style="max-height:300px">def f(x): return 1+1 </div>
+    <div id="collapse12" class="panel-collapse collapse ">
+    <div id="code12" style="max-height:300px">def f(x): return 1+1 </div>
               <div class="input">
-<div class="prompt input_prompt">In&nbsp;[42]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
@@ -13402,6 +15121,7 @@ nBySJEmSJEmaYP8BFdgJNKujheYAAAAASUVORK5CYII=
     </div>
   </div>
 </div>
+
 
 <div class="output_wrapper">
 <div class="output">
@@ -13805,23 +15525,24 @@ C: (1,0)</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 
+
     <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
-        <a data-toggle="collapse" href="#collapse26">Code</a>
-        <a onclick="ace.edit('code26').getSession().setMode('ace/mode/python')">Edit</a>
+        <a data-toggle="collapse" href="#collapse13">Code</a>
+        <a onclick="ace.edit('code13').getSession().setMode('ace/mode/python')">Edit</a>
       </h4>
     </div>
-    <div id="collapse26" class="panel-collapse collapse ">
-    <div id="code26" style="max-height:300px">def f(x): return 1+1 </div>
+    <div id="collapse13" class="panel-collapse collapse ">
+    <div id="code13" style="max-height:300px">def f(x): return 1+1 </div>
               <div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">.</span><span class="mi">4</span><span class="p">,</span><span class="mf">1.6</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="mf">1.1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">diff</span> <span class="o">=</span> <span class="o">.</span><span class="mi">2</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="o">.</span><span class="mi">05</span>
 <span class="n">newPoints</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="o">-</span><span class="n">diff</span><span class="p">,</span><span class="mi">0</span><span class="p">),(</span><span class="mi">1</span><span class="o">-</span><span class="n">diff</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">diff</span><span class="p">)),(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),(</span><span class="mi">1</span><span class="o">-</span><span class="n">diff</span><span class="p">,</span><span class="mi">0</span><span class="p">)]</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">newPoints</span><span class="p">)),</span><span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">);</span>
@@ -13835,6 +15556,7 @@ C: (1,0)</p>
   </div>
 </div>
 
+
 <div class="output_wrapper">
 <div class="output">
 
@@ -13843,166 +15565,1946 @@ C: (1,0)</p>
 
 
 <div class="output_png output_subarea ">
-<img src="data:image/png;base64,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
-AElFTkSuQmCC
+<img src="data:image/png;base64,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
+AABJRU5ErkJggg==
 "
 >
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+
+
+    <div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" href="#collapse14">Code</a>
+        <a onclick="ace.edit('code14').getSession().setMode('ace/mode/python')">Edit</a>
+      </h4>
+    </div>
+    <div id="collapse14" class="panel-collapse collapse ">
+    <div id="code14" style="max-height:300px">def f(x): return 1+1 </div>
+              <div class="input">
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">jsPlot</span> l [&#39;x&#39;,0,.4,.01]
+
+def linspace(start,end,num):
+    spacing = (end-start)/num
+    return [start+spacing*i for i in range(num)]
+
+def data(off):
+    x = linspace(1-3*off,1+3*off,100)
+    y = [math.log(i) for i in x]
+    xp = [1-off,1-off,1]
+    yp = [math.log(1-off),off/-1000,off/-1000]
+    plot(x,y)
+    plot(xp,yp)
+    angle = math.atan(math.log(1-off)/-off)*180/math.PI
+    write(&quot;The angle is &quot; +angle.toFixed(3)+ &quot; degrees&quot;)
+    write(&quot;The slope of the line is &quot;+(1/(1-off)))
+</pre></div>
+
+</div>
+</div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>l
+ [&#39;x&#39;,0,.4,.01]
+2
+</pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<script>"use strict";
+// Transcrypt'ed from Python, 2016-08-15 15:10:37
+function tmp2 () {
+	var __all__ = {};
+	var __world__ = __all__;
+	
+	// Nested object creator, part of the nesting may already exist and have attributes
+	var __nest__ = function (headObject, tailNames, value) {
+		// In some cases this will be a global object, e.g. 'window'
+		var current = headObject;
+		
+		if (tailNames != '') {	// Split on empty string doesn't give empty list
+			// Find the last already created object in tailNames
+			var tailChain = tailNames.split ('.');
+			var firstNewIndex = tailChain.length;
+			for (var index = 0; index < tailChain.length; index++) {
+				if (!current.hasOwnProperty (tailChain [index])) {
+					firstNewIndex = index;
+					break;
+				}
+				current = current [tailChain [index]];
+			}
+			
+			// Create the rest of the objects, if any
+			for (var index = firstNewIndex; index < tailChain.length; index++) {
+				current [tailChain [index]] = {};
+				current = current [tailChain [index]];
+			}
+		}
+		
+		// Insert it new attributes, it may have been created earlier and have other attributes
+		for (var attrib in value) {
+			current [attrib] = value [attrib];			
+		}		
+	};
+	__all__.__nest__ = __nest__;
+	
+	// Initialize module if not yet done and return its globals
+	var __init__ = function (module) {
+		if (!module.__inited__) {
+			module.__all__.__init__ (module.__all__);
+			module.__inited__ = true;
+		}
+		return module.__all__;
+	};
+	__all__.__init__ = __init__;
+	
+	// Since we want to assign functions, a = b.f should make b.f produce a bound function
+	// So __get__ should be called by a property rather then a function
+	// Factory __get__ creates one of three curried functions for func
+	// Which one is produced depends on what's to the left of the dot of the corresponding JavaScript property
+	var __get__ = function (self, func, quotedFuncName) {
+		if (self) {
+			if (self.hasOwnProperty ('__class__') || typeof self == 'string' || self instanceof String) {			// Object before the dot
+				if (quotedFuncName) {									// Memoize call since fcall is on, by installing bound function in instance
+					Object.defineProperty (self, quotedFuncName, {		// Will override the non-own property, next time it will be called directly
+						value: function () {							// So next time just call curry function that calls function
+							var args = [] .slice.apply (arguments);
+							return func.apply (null, [self] .concat (args));
+						},				
+						writable: true,
+						enumerable: true, configurable:true,
+						configurable: true
+					});
+				}
+				return function () {									// Return bound function, code dupplication for efficiency if no memoizing
+					var args = [] .slice.apply (arguments);				// So multilayer search prototype, apply __get__, call curry func that calls func
+					return func.apply (null, [self] .concat (args));
+				};
+			}
+			else {														// Class before the dot
+				return func;											// Return static method
+			}
+		}
+		else {															// Nothing before the dot
+			return func;												// Return free function
+		}
+	}
+	__all__.__get__ = __get__;
+			
+	// Class creator function
+	var __class__ = function (name, bases, extra) {
+		// Create class functor
+		var cls = function () {
+			var args = [] .slice.apply (arguments);
+			return cls.__new__ (args);
+		};
+		
+		// Copy methods, properties and static attributes from base classes to new class object
+		for (var index = bases.length - 1; index >= 0; index--) {	// Reversed order, since class vars of first base should win
+			var base = bases [index];
+			for (var attrib in base) {
+				var descrip = Object.getOwnPropertyDescriptor (base, attrib);
+				Object.defineProperty (cls, attrib, descrip);
+			}
+		}
+		
+		// Add class specific attributes to class object
+		cls.__name__ = name;
+		cls.__bases__ = bases;
+		
+		// Add own methods, properties and static attributes to class object
+		for (var attrib in extra) {
+			var descrip = Object.getOwnPropertyDescriptor (extra, attrib);
+			Object.defineProperty (cls, attrib, descrip);
+		}
+				
+		// Return class object
+		return cls;
+	};
+	__all__.__class__ = __class__;
+	
+	// Create mother of all classes		
+	var object = __all__.__class__ ('object', [], {
+		__init__: function (self) {},
+			
+		__name__: 'object',
+		__bases__: [],
+			
+		// Object creator function is inherited by all classes (??? Make global?)
+		__new__: function (args) {	// Args are just the constructor args		
+			// In JavaScript the Python class is the prototype of the Python object
+			// In this way methods and static attributes will be available both with a class and an object before the dot
+			// The descriptor produced by __get__ will return the right method flavor
+			var instance = Object.create (this, {__class__: {value: this, enumerable: true, configurable:true}});
+			
+			// Call constructor
+			this.__init__.apply (null, [instance] .concat (args));
+			
+			// Return instance			
+			return instance;
+		}	
+	});
+	__all__.object = object;
+	
+	// Define __pragma__ to preserve '<all>' and '</all>', since it's never generated as a function, must be done early, so here
+	var __pragma__ = function () {};
+	__all__.__pragma__ = __pragma__;
+	__nest__ (
+		__all__,
+		'org.transcrypt.__base__', {
+			__all__: {
+				__inited__: false,
+				__init__: function (__all__) {
+					var __Envir__ = __class__ ('__Envir__', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							self.transpiler_name = 'transcrypt';
+							self.transpiler_version = '3.5.202';
+							self.target_subdir = '__javascript__';
+						});}
+					});
+					var __envir__ = __Envir__ ();
+					__pragma__ ('<all>')
+						__all__.__Envir__ = __Envir__;
+						__all__.__envir__ = __envir__;
+					__pragma__ ('</all>')
+				}
+			}
+		}
+	);
+	__nest__ (
+		__all__,
+		'org.transcrypt.__standard__', {
+			__all__: {
+				__inited__: false,
+				__init__: function (__all__) {
+					var Exception = __class__ ('Exception', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							var args = tuple ([].slice.apply (arguments).slice (1));
+							self.args = args;
+						});},
+						get __repr__ () {return __get__ (this, function (self) {
+							if (len (self.args)) {
+								return '{}{}'.format (self.__class__.__name__, repr (tuple (self.args)));
+							}
+							else {
+								return '{}()'.format (self.__class__.__name__);
+							}
+						});},
+						get __str__ () {return __get__ (this, function (self) {
+							if (len (self.args) > 1) {
+								return str (tuple (self.args));
+							}
+							else {
+								if (len (self.args)) {
+									return str (self.args [0]);
+								}
+								else {
+									return '';
+								}
+							}
+						});}
+					});
+					var StopIteration = __class__ ('StopIteration', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							Exception.__init__ (self, 'Iterator exhausted');
+						});}
+					});
+					__all__.StopIteration = StopIteration;
+					var ValueError = __class__ ('ValueError', [Exception], {
+					});
+					var AssertionError = __class__ ('AssertionError', [Exception], {
+					});
+					var __sort__ = function (iterable, key, reverse) {
+						if (typeof key == 'undefined' || (key != null && key .__class__ == __kwargdict__)) {;
+							var key = null;
+						};
+						if (typeof reverse == 'undefined' || (reverse != null && reverse .__class__ == __kwargdict__)) {;
+							var reverse = false;
+						};
+						if (arguments.length) {
+							var __ilastarg0__ = arguments.length - 1;
+							if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+								var __allkwargs0__ = arguments [__ilastarg0__--];
+								for (var __attrib0__ in __allkwargs0__) {
+									switch (__attrib0__) {
+										case 'iterable': var iterable = __allkwargs0__ [__attrib0__]; break;
+										case 'key': var key = __allkwargs0__ [__attrib0__]; break;
+										case 'reverse': var reverse = __allkwargs0__ [__attrib0__]; break;
+									}
+								}
+							}
+						}
+						if (key) {
+							iterable.sort ((function __lambda__ (a, b) {
+								if (arguments.length) {
+									var __ilastarg0__ = arguments.length - 1;
+									if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+										var __allkwargs0__ = arguments [__ilastarg0__--];
+										for (var __attrib0__ in __allkwargs0__) {
+											switch (__attrib0__) {
+												case 'a': var a = __allkwargs0__ [__attrib0__]; break;
+												case 'b': var b = __allkwargs0__ [__attrib0__]; break;
+											}
+										}
+									}
+								}
+								return key (a) > key (b);
+							}));
+						}
+						else {
+							iterable.sort ();
+						}
+						if (reverse) {
+							iterable.reverse ();
+						}
+					};
+					var sorted = function (iterable, key, reverse) {
+						if (typeof key == 'undefined' || (key != null && key .__class__ == __kwargdict__)) {;
+							var key = null;
+						};
+						if (typeof reverse == 'undefined' || (reverse != null && reverse .__class__ == __kwargdict__)) {;
+							var reverse = false;
+						};
+						if (arguments.length) {
+							var __ilastarg0__ = arguments.length - 1;
+							if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+								var __allkwargs0__ = arguments [__ilastarg0__--];
+								for (var __attrib0__ in __allkwargs0__) {
+									switch (__attrib0__) {
+										case 'iterable': var iterable = __allkwargs0__ [__attrib0__]; break;
+										case 'key': var key = __allkwargs0__ [__attrib0__]; break;
+										case 'reverse': var reverse = __allkwargs0__ [__attrib0__]; break;
+									}
+								}
+							}
+						}
+						if (type (iterable) == dict) {
+							var result = copy (iterable.keys ());
+						}
+						else {
+							var result = copy (iterable);
+						}
+						__sort__ (result, key, reverse);
+						return result;
+					};
+					var map = function (func, iterable) {
+						return function () {
+							var __accu0__ = [];
+							var __iterable0__ = iterable;
+							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+								var item = __iterable0__ [__index0__];
+								__accu0__.append (func (item));
+							}
+							return __accu0__;
+						} ();
+					};
+					var filter = function (func, iterable) {
+						return function () {
+							var __accu0__ = [];
+							var __iterable0__ = iterable;
+							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+								var item = __iterable0__ [__index0__];
+								if (func (item)) {
+									__accu0__.append (item);
+								}
+							}
+							return __accu0__;
+						} ();
+					};
+					var __Terminal__ = __class__ ('__Terminal__', [object], {
+						get __init__ () {return __get__ (this, function (self) {
+							try {
+								self.element = document.getElementById ('__terminal__');
+							}
+							catch (__except__) {
+								self.element = null;
+							}
+							if (self.element) {
+								self.buffer = '';
+								self.element.style.overflowX = 'auto';
+								self.element.style.padding = '5px';
+								self.element.innerHTML = '_';
+							}
+						});},
+						get print () {return __get__ (this, function (self) {
+							var sep = ' ';
+							var end = '\n';
+							if (arguments.length) {
+								var __ilastarg0__ = arguments.length - 1;
+								if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+									var __allkwargs0__ = arguments [__ilastarg0__--];
+									for (var __attrib0__ in __allkwargs0__) {
+										switch (__attrib0__) {
+											case 'self': var self = __allkwargs0__ [__attrib0__]; break;
+											case 'sep': var sep = __allkwargs0__ [__attrib0__]; break;
+											case 'end': var end = __allkwargs0__ [__attrib0__]; break;
+										}
+									}
+								}
+								var args = tuple ([].slice.apply (arguments).slice (1, __ilastarg0__ + 1));
+							}
+							if (self.element) {
+								self.buffer = '{}{}{}'.format (self.buffer, sep.join (function () {
+									var __accu0__ = [];
+									var __iterable0__ = args;
+									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+										var arg = __iterable0__ [__index0__];
+										__accu0__.append (str (arg));
+									}
+									return __accu0__;
+								} ()), end).__getslice__ (-(4096), null, 1);
+								self.element.innerHTML = self.buffer.py_replace ('\n', '<br>');
+								self.element.scrollTop = self.element.scrollHeight;
+							}
+							else {
+								console.log (sep.join (args));
+							}
+						});},
+						get input () {return __get__ (this, function (self, question) {
+							if (arguments.length) {
+								var __ilastarg0__ = arguments.length - 1;
+								if (arguments [__ilastarg0__] && arguments [__ilastarg0__].__class__ == __kwargdict__) {
+									var __allkwargs0__ = arguments [__ilastarg0__--];
+									for (var __attrib0__ in __allkwargs0__) {
+										switch (__attrib0__) {
+											case 'self': var self = __allkwargs0__ [__attrib0__]; break;
+											case 'question': var question = __allkwargs0__ [__attrib0__]; break;
+										}
+									}
+								}
+							}
+							self.print ('{}_'.format (question), __kwargdict__ ({end: ''}));
+							try {
+								var answer = window.prompt (question);
+							}
+							catch (__except__) {
+								console.log ('Error: Blocking input not yet implemented outside browser');
+							}
+							self.buffer = self.buffer.__getslice__ (0, -(1), 1);
+							self.print (answer);
+							return answer;
+						});}
+					});
+					var __terminal__ = __Terminal__ ();
+					__pragma__ ('<all>')
+						__all__.AssertionError = AssertionError;
+						__all__.Exception = Exception;
+						__all__.StopIteration = StopIteration;
+						__all__.ValueError = ValueError;
+						__all__.__Terminal__ = __Terminal__;
+						__all__.__sort__ = __sort__;
+						__all__.__terminal__ = __terminal__;
+						__all__.filter = filter;
+						__all__.map = map;
+						__all__.sorted = sorted;
+					__pragma__ ('</all>')
+				}
+			}
+		}
+	);
+
+	// Initialize non-nested modules __base__ and __standard__ and make its names available directly and via __all__
+	// It can't do that itself, because it is a regular Python module
+	// The compiler recognizes its their namesand generates them inline rather than nesting them
+	// In this way it isn't needed to import them everywhere
+	 	
+	// __base__
+	
+	__nest__ (__all__, '', __init__ (__all__.org.transcrypt.__base__));
+	var __envir__ = __all__.__envir__;
+
+	// __standard__
+	
+	__nest__ (__all__, '', __init__ (__all__.org.transcrypt.__standard__));
+	
+	var Exception = __all__.Exception;
+	var StopIteration = __all__.StopIteration;
+	var ValueError = __all__.ValueError;
+	var AssertionError = __all__.AssertionError;
+	
+	var __sort__ = __all__.__sort__;
+	var sorted = __all__.sorted;
+	
+	var map = __all__.map;
+	var filter = __all__.filter;
+	
+	__all__.print = __all__.__terminal__.print;
+	__all__.input = __all__.__terminal__.input;
+	
+	var print = __all__.print;
+	var input = __all__.input;
+
+	// Complete __envir__, that was created in __base__, for non-stub mode
+	__envir__.executor_name = __envir__.transpiler_name;
+	
+	// Make make __main__ available in browser
+	var __main__ = {__file__: ''};
+	__all__.main = __main__;
+	
+	// Define current exception, there's at most one exception in the air at any time
+	var __except__ = null;
+	__all__.__except__ = __except__;
+		
+	// Define recognizable dictionary for **kwargs parameter
+	var __kwargdict__ = function (anObject) {
+		anObject.__class__ = __kwargdict__;	// This class needs no __name__
+		anObject.constructor = Object;
+		return anObject;
+	}
+	__all__.___kwargdict__ = __kwargdict__;
+	
+	// Property installer function, no member since that would bloat classes
+	var property = function (getter, setter) {	// Returns a property descriptor rather than a property
+		if (!setter) {	// ??? Make setter optional instead of dummy?
+			setter = function () {};
+		}
+		return {get: function () {return getter (this)}, set: function (value) {setter (this, value)}, enumerable: true, configurable:true};
+	}
+	__all__.property = property;
+	
+	// Assert function, call to it only generated when compiling with --dassert option
+	function assert (condition, message) {
+		if (!condition) {
+			if (message != undefined) {
+				throw AssertionError (message);
+			}
+			else {
+				throw AssertionError ();
+			}
+		}
+	}
+	
+	__all__.assert = assert;
+	
+	var __merge__ = function (object0, object1) {
+		var result = {};
+		for (var attrib in object0) {
+			result [attrib] = object0 [attrib];
+		}
+		for (var attrib in object1) {
+			result [attrib] = object1 [attrib];
+		}
+		return result;
+	}
+	__all__.__merge__ = __merge__;
+	
+	/* Not needed anymore?
+	// Make console.log understand apply
+	console.log.apply = function () {
+		print ([] .slice.apply (arguments) .slice (1));
+	};
+	*/
+
+	// Manipulating attributes by name
+	
+	var dir = function (obj) {
+		var aList = [];
+		for (var aKey in obj) {
+			aList.push (aKey);
+		}
+		aList.sort ();
+		return aList;
+	}
+	
+	var setattr = function (obj, name, value) {
+		obj [name] = value;
+	};
+		
+	__all__.setattr = setattr;
+	
+	var getattr = function (obj, name) {
+		return obj [name];
+	};
+	
+	__all__.getattr= getattr
+	
+	var hasattr = function (obj, name) {
+		return name in obj;
+	};
+	__all__.hasattr = hasattr;
+	
+	var delattr = function (obj, name) {
+		delete obj [name];
+	};
+	__all__.delattr = (delattr);
+	
+	// In function, used to mimic Python's in operator
+	var __in__ = function (element, container) {
+		if (type (container) == dict) {
+			return container.keys () .indexOf (element) > -1;
+		}
+		else {
+			return container.indexOf (element) > -1;
+		}
+	}
+	__all__.__in__ = __in__;
+	
+	// Find out if an attribute is special
+	var __specialattrib__ = function (attrib) {
+		return (attrib.startswith ('__') && attrib.endswith ('__')) || attrib == 'constructor' || attrib.startswith ('py_');
+	}
+	__all__.__specialattrib__ = __specialattrib__;
+		
+	// Len function for any object
+	var len = function (anObject) {
+		if (anObject) {
+			var l = anObject.length;
+			if (l == undefined) {
+				var result = 0;
+				for (var attrib in anObject) {
+					if (!__specialattrib__ (attrib)) {
+						result++;
+					}
+				}
+				return result;
+			}
+			else {
+				return l;
+			}
+		}
+		else {
+			return 0;
+		}
+	}
+	__all__.len = len;
+	
+	var bool = function (any) {	// Subtly different from __ (any), always truly returns a bool, rather than something truthy or falsy
+		return typeof any == 'boolean' ? any : typeof any == 'number' ? any != 0 : len (any) ? true : false;
+	}
+	bool.__name__ = 'bool'	// So it can be used as a type with a name
+	__all__.bool = bool;
+	
+	var float = function (any) {
+		if (isNaN (any)) {
+			throw ('ValueError');	// !!! Turn into real value error
+		}
+		else {
+			return +any;
+		}
+	}
+	float.__name__ = 'float'
+	__all__.float = float;
+	
+	var int = function (any) {
+		return float (any) | 0
+	}
+	int.__name__ = 'int';
+	__all__.int = int;
+	
+	var type = function (anObject) {
+		try {
+			var result = anObject.__class__;
+			return result;
+		}
+		catch (exception) {
+			var aType = typeof anObject;
+			if (aType == 'boolean') {
+				return bool;
+			}
+			else if (aType == 'number') {
+				if (anObject % 1 == 0) {
+					return int;
+				}
+				else {
+					return float;
+				}				
+			}
+			else {
+				return aType;
+			}
+		}
+	}
+	__all__.type = type;
+	
+	var isinstance = function (anObject, classinfo) {
+		function isA (queryClass) {
+			if (queryClass == classinfo) {
+				return true;
+			}
+			for (var index = 0; index < queryClass.__bases__.length; index++) {
+				if (isA (queryClass.__bases__ [index], classinfo)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		try {
+			return '__class__' in anObject ? isA (anObject.__class__) : anObject instanceof classinfo;
+		}
+		catch (exception) {
+			console.log (exception);
+			console.dir (anObject);
+		}
+	};
+	__all__.isinstance = isinstance;
+	
+	// Truthyness conversion
+	function __ (any) {	// Subtly different from bool (any), __ ([1, 2, 3]) returns [1, 2, 3], needed for nonempty selection: l = list1 or list2
+		return ['boolean', 'number'] .indexOf (typeof (any)) >= 0 ? any : len (any) ? any : false;
+	}
+	__all__.__ = __;
+	
+	// Repr function uses __repr__ method, then __str__ then toString
+	var repr = function (anObject) {
+		try {
+			return anObject.__repr__ ();
+		}
+		catch (exception) {
+			try {
+				return anObject.__str__ ();
+			}
+			catch (exception) {	// It was a dict in Python, so an Object in JavaScript
+				try {
+					if (anObject.constructor == Object) {
+						var result = '{';
+						var comma = false;
+						for (var attrib in anObject) {
+							if (!__specialattrib__ (attrib)) {
+								if (attrib.isnumeric ()) {
+									var attribRepr = attrib;				// If key can be interpreted as numerical, we make it numerical 
+								}											// So we accept that '1' is misrepresented as 1
+								else {
+									var attribRepr = '\'' + attrib + '\'';	// Alpha key in dict
+								}
+								
+								if (comma) {
+									result += ', ';
+								}
+								else {
+									comma = true;
+								}
+								try {
+									result += attribRepr + ': ' + anObject [attrib] .__repr__ ();
+								}
+								catch (exception) {
+									result += attribRepr + ': ' + anObject [attrib] .toString ();
+								}
+							}
+						}
+						result += '}';
+						return result;					
+					}
+					else {
+						return typeof anObject == 'boolean' ? anObject.toString () .capitalize () : anObject.toString ();
+					}
+				}
+				catch (exception) {
+					console.log ('ERROR: Could not evaluate repr (<object of type ' + typeof anObject + '>)');
+					return '???';
+				}
+			}
+		}
+	}
+	__all__.repr = repr;
+	
+	// Char from Unicode or ASCII
+	var chr = function (charCode) {
+		return String.fromCharCode (charCode);
+	}
+	__all__.chr = chr;
+
+	// Unicode or ASCII from char
+	var ord = function (aChar) {
+		return aChar.charCodeAt (0);
+	}
+	__all__.org = ord;
+	
+	// Maximum of n numbers
+	var max = Math.max;
+	__all__.max = max;
+	
+	// Minimum of n numbers
+	var min = Math.min;
+	__all__.min = min;
+	
+	// Absolute value
+	var abs = Math.abs;
+	__all__.abs = abs;
+				
+	// Iterator protocol functions
+	
+	function wrap_py_next () {		// Add as 'next' method to make Python iterator JavaScript compatible
+		var result = this.__next__ ();
+		return {value: result, done: result == undefined};		
+	}
+	
+	function wrap_js_next () {		// Add as '__next__' method to make JavaScript iterator Python compatible
+		var result = this.next ();
+		if (result.done) {
+			throw StopIteration ();
+		}
+		else {
+			return result.value;
+		}
+	}
+	
+	function py_iter (iterable) {	// Produces universal iterator with Python '__next__' as well as JavaScript 'next'
+		if ('__iter__' in iterable) {	// It's a Python iterable (incl. JavaScript Arrays and strings)
+			var iterator = iterable.__iter__ ();
+			iterator.next = wrap_py_next;
+			return iterator;
+		}
+		else if ('selector' in iterable) { // Assume it's a JQuery iterator
+			var iterator = list (iterable) .__iter__ ();
+			iterator.next = wrap_py_next;
+			return iterator;
+		}
+		else if ('next' in iterable) {	// It's a JavaScript generator
+			// It should have an iterator field, but doesn't in Chrome
+			// So we just return the generator itself, which is both an iterable and an iterator
+			iterable.__next__ = wrap_js_next;
+			return iterable;
+		}
+		else {
+			return null;
+		}
+	}
+	__all__.py_iter = py_iter;
+	
+	function py_next (iterator) {				// Called only in a Python context, could receive Python or JavaScript iterator
+		try {									// Primarily assume Python iterator, for max speed
+			var result = iterator.__next__ ();
+		}
+		catch (exception) {						// JavaScript iterators are the exception here
+			var result = iterator.next ();
+			if (result.done) {
+				throw StopIteration ();
+			}
+			else {
+				return result.value;
+			}
+		}	
+		if (result == undefined) {
+			throw StopIteration ();
+		}
+		return result;
+	}
+	__all__.py_next = py_next;
+	
+	function __SeqIterator__ (iterable) {
+		this.iterable = iterable;
+		this.index = 0;
+	}
+	
+	__all__.__SeqIterator__ = __SeqIterator__;
+	
+	__SeqIterator__.prototype.__iter__ = function () {
+		return this;
+	}
+	
+	__SeqIterator__.prototype.__next__ = function () {
+		return this.iterable [this.index++];
+	}
+	
+	__SeqIterator__.prototype.next = wrap_py_next;
+	
+	function __KeyIterator__ (iterable) {
+		this.iterable = iterable;
+		this.index = 0;
+	}
+
+	__all__.__KeyIterator__ = __KeyIterator__;
+	
+	__KeyIterator__.prototype.__iter__ = function () {
+		return this;
+	}
+	
+	__KeyIterator__.prototype.__next__ = function () {
+		return this.iterable.keys () [this.index++];
+	}
+			
+	__KeyIterator__.prototype.next = wrap_py_next;
+	
+	// Reversed function for arrays
+	var py_reversed = function (iterable) {
+		iterable = iterable.slice ();
+		iterable.reverse ();
+		return iterable;
+	}
+	__all__.py_reversed = py_reversed;
+	
+	// Zip method for arrays
+	var zip = function () {
+		var args = [] .slice.call (arguments);
+		var shortest = args.length == 0 ? [] : args.reduce (	// Find shortest array in arguments
+			function (array0, array1) {
+				return array0.length < array1.length ? array0 : array1;
+			}
+		);
+		return shortest.map (					// Map each element of shortest array
+			function (current, index) {			// To the result of this function
+				return args.map (				// Map each array in arguments
+					function (current) {		// To the result of this function
+						return current [index]; // Namely it's index't entry
+					}
+				);
+			}
+		);
+	}
+	__all__.zip = zip;
+	
+	// Range method, returning an array
+	function range (start, stop, step) {
+		if (stop == undefined) {
+			// one param defined
+			stop = start;
+			start = 0;
+		}
+		if (step == undefined) {
+			step = 1;
+		}
+		if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
+			return [];
+		}
+		var result = [];
+		for (var i = start; step > 0 ? i < stop : i > stop; i += step) {
+			result.push(i);
+		}
+		return result;
+	};
+	__all__.range = range;
+	
+	// Any, all and sum
+	
+	function any (iterable) {
+		for (var index = 0; index < iterable.length; index++) {
+			if (bool (iterable [index])) {
+				return true;
+			}
+		}
+		return false;
+	}
+	function all (iterable) {
+		for (var index = 0; index < iterable.length; index++) {
+			if (! bool (iterable [index])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	function sum (iterable) {
+		var result = 0;
+		for (var index = 0; index < iterable.length; index++) {
+			result += iterable [index];
+		}
+		return result;
+	}
+
+	__all__.any = any;
+	__all__.all = all;
+	__all__.sum = sum;
+	
+	// Enumerate method, returning a zipped list
+	function enumerate (iterable) {
+		return zip (range (len (iterable)), iterable);
+	}
+	__all__.enumerate = enumerate;
+		
+	// Shallow and deepcopy
+	
+	function copy (anObject) {
+		if (anObject == null || typeof anObject == "object") {
+			return anObject;
+		}
+		else {
+			var result = {}
+			for (var attrib in obj) {
+				if (anObject.hasOwnProperty (attrib)) {
+					result [attrib] = anObject [attrib];
+				}
+			}
+			return result;
+		}
+	}
+	__all__.copy = copy;
+	
+	function deepcopy (anObject) {
+		if (anObject == null || typeof anObject == "object") {
+			return anObject;
+		}
+		else {
+			var result = {}
+			for (var attrib in obj) {
+				if (anObject.hasOwnProperty (attrib)) {
+					result [attrib] = deepcopy (anObject [attrib]);
+				}
+			}
+			return result;
+		}
+	}
+	__all__.deepcopy = deepcopy;
+		
+	// List extensions to Array
+	
+	function list (iterable) {										// All such creators should be callable without new
+		var instance = iterable ? [] .slice.apply (iterable) : [];	// Spread iterable, n.b. array.slice (), so array before dot
+		// Sort is the normal JavaScript sort, Python sort is a non-member function
+		return instance;
+	}
+	__all__.list = list;
+	Array.prototype.__class__ = list;	// All arrays are lists (not only if constructed by the list ctor), unless constructed otherwise
+	list.__name__ = 'list';
+	
+	/*
+	Array.from = function (iterator) { // !!! remove
+		result = [];
+		for (item of iterator) {
+			result.push (item);
+		}
+		return result;
+	}
+	*/
+	
+	Array.prototype.__iter__ = function () {
+		return new __SeqIterator__ (this);
+	}
+	
+	Array.prototype.__getslice__ = function (start, stop, step) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+		
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+		
+		var result = list ([]);
+		for (var index = start; index < stop; index += step) {
+			result.push (this [index]);
+		}
+		
+		return result;
+	}
+		
+	Array.prototype.__setslice__ = function (start, stop, step, source) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+			
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+			
+		if (step == null) {	// Assign to 'ordinary' slice, replace subsequence
+			Array.prototype.splice.apply (this, [start, stop - start] .concat (source)) 
+		}
+		else {				// Assign to extended slice, replace designated items one by one
+			var sourceIndex = 0;
+			for (var targetIndex = start; targetIndex < stop; targetIndex += step) {
+				this [targetIndex] = source [sourceIndex++];
+			}
+		}
+	}
+	
+	Array.prototype.__repr__ = function () {
+		if (this.__class__ == set && !this.length) {
+			return 'set()';
+		}
+		
+		var result = !this.__class__ || this.__class__ == list ? '[' : this.__class__ == tuple ? '(' : '{';
+		
+		for (var index = 0; index < this.length; index++) {
+			if (index) {
+				result += ', ';
+			}
+			try {
+				result += this [index] .__repr__ ();
+			}
+			catch (exception) {
+				result += this [index] .toString ();
+			}
+		}
+		
+		if (this.__class__ == tuple && this.length == 1) {
+			result += ',';
+		}
+		
+		result += !this.__class__ || this.__class__ == list ? ']' : this.__class__ == tuple ? ')' : '}';;
+		return result;
+	};
+	
+	Array.prototype.__str__ = Array.prototype.__repr__;
+	
+	Array.prototype.append = function (element) {
+		this.push (element);
+	};
+
+	Array.prototype.clear = function () {
+		this.length = 0;
+	};
+	
+	Array.prototype.extend = function (aList) {
+		this.push.apply (this, aList);
+	};
+	
+	Array.prototype.insert = function (index, element) {
+		this.splice (index, 0, element);
+	};
+
+	Array.prototype.remove = function (element) {
+		var index = this.indexOf (element);
+		if (index == -1) {
+			throw ('KeyError');
+		}
+		this.splice (index, 1);
+	};
+
+	Array.prototype.index = function (element) {
+		return this.indexOf (element)
+	};
+	
+	Array.prototype.py_pop = function (index) {
+		if (index == undefined) {
+			return this.pop ()	// Remove last element
+		}
+		else {
+			return this.splice (index, 1) [0];
+		}
+	};	
+	
+	Array.prototype.py_sort = function () {
+		__sort__.apply  (null, [this].concat ([] .slice.apply (arguments)));	// Can't work directly with arguments
+		// Python params: (iterable, key = None, reverse = False)
+		// py_sort is called with the Transcrypt kwargs mechanism, and just passes the params on to __sort__
+		// __sort__ is def'ed with the Transcrypt kwargs mechanism
+	};
+	
+	Array.prototype.__add__ = function (aList) {
+		return list (this.concat (aList))
+	}
+	
+	Array.prototype.__mul__ = function (scalar) {
+		var result = this;
+		for (var i = 1; i < scalar; i++) {
+			result = result.concat (this);
+		}
+		return result;
+	}
+	
+	Array.prototype.__rmul__ = Array.prototype.__mul__;
+		
+	// Tuple extensions to Array
+	
+	function tuple (iterable) {
+		var instance = iterable ? [] .slice.apply (iterable) : [];
+		instance.__class__ = tuple;	// Not all arrays are tuples
+		return instance;
+	}
+	__all__.tuple = tuple;
+	tuple.__name__ = 'tuple';
+	
+	// Set extensions to Array
+	// N.B. Since sets are unordered, set operations will occasionally alter the 'this' array by sorting it
+		
+	function set (iterable) {
+		var instance = [];
+		if (iterable) {
+			for (var index = 0; index < iterable.length; index++) {
+				instance.add (iterable [index]);
+			}
+			
+			
+		}
+		instance.__class__ = set;	// Not all arrays are sets
+		return instance;
+	}
+	__all__.set = set;
+	set.__name__ = 'set';
+	
+	Array.prototype.__bindexOf__ = function (element) {	// Used to turn O (n^2) into O (n log n)
+	// Since sorting is lex, compare has to be lex. This also allows for mixed lists
+	
+		element += '';
+	
+		var mindex = 0;
+		var maxdex = this.length - 1;
+			 
+		while (mindex <= maxdex) {
+			var index = (mindex + maxdex) / 2 | 0;
+			var middle = this [index] + '';
+	 
+			if (middle < element) {
+				mindex = index + 1;
+			}
+			else if (middle > element) {
+				maxdex = index - 1;
+			}
+			else {
+				return index;
+			}
+		}
+	 
+		return -1;
+	}
+	
+	Array.prototype.add = function (element) {		
+		if (this.indexOf (element) == -1) {	// Avoid duplicates in set
+			this.push (element);
+		}
+	};
+	
+	Array.prototype.discard = function (element) {
+		var index = this.indexOf (element);
+		if (index != -1) {
+			this.splice (index, 1);
+		}
+	};
+	
+	Array.prototype.isdisjoint = function (other) {
+		this.sort ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) != -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.issuperset = function (other) {
+		this.sort ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) == -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.issubset = function (other) {
+		return set (other.slice ()) .issuperset (this);	// Sort copy of 'other', not 'other' itself, since it may be an ordered sequence
+	};
+	
+	Array.prototype.union = function (other) {
+		var result = set (this.slice () .sort ());
+		for (var i = 0; i < other.length; i++) {
+			if (result.__bindexOf__ (other [i]) == -1) {
+				result.push (other [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.intersection = function (other) {
+		this.sort ();
+		var result = set ();
+		for (var i = 0; i < other.length; i++) {
+			if (this.__bindexOf__ (other [i]) != -1) {
+				result.push (other [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.difference = function (other) {
+		var sother = set (other.slice () .sort ());
+		var result = set ();
+		for (var i = 0; i < this.length; i++) {
+			if (sother.__bindexOf__ (this [i]) == -1) {
+				result.push (this [i]);
+			}
+		}
+		return result;
+	};
+	
+	Array.prototype.symmetric_difference = function (other) {
+		return this.union (other) .difference (this.intersection (other));
+	};
+	
+	Array.prototype.update = function () {	// O (n)
+		var updated = [] .concat.apply (this.slice (), arguments) .sort ();		
+		this.clear ();
+		for (var i = 0; i < updated.length; i++) {
+			if (updated [i] != updated [i - 1]) {
+				this.push (updated [i]);
+			}
+		}
+	};
+	
+	Array.prototype.__eq__ = function (other) {	// Also used for list
+		if (this.length != other.length) {
+			return false;
+		}
+		if (this.__class__ == set) {
+			this.sort ();
+			other.sort ();
+		}	
+		for (var i = 0; i < this.length; i++) {
+			if (this [i] != other [i]) {
+				return false;
+			}
+		}
+		return true;
+	};
+	
+	Array.prototype.__ne__ = function (other) {	// Also used for list
+		return !this.__eq__ (other);
+	}
+		
+	Array.prototype.__le__ = function (other) {
+		return this.issubset (other);
+	}
+		
+	Array.prototype.__ge__ = function (other) {
+		return this.issuperset (other);
+	}
+		
+	Array.prototype.__lt__ = function (other) {
+		return this.issubset (other) && !this.issuperset (other);
+	}
+		
+	Array.prototype.__gt__ = function (other) {
+		return this.issuperset (other) && !this.issubset (other);
+	}
+	
+	// Dict extensions to object
+	
+	function __keyIterator__ () {
+		return new __KeyIterator__ (this);
+	}
+	
+	function __keys__ () {
+		var keys = []
+		for (var attrib in this) {
+			if (!__specialattrib__ (attrib)) {
+				keys.push (attrib);
+			}     
+		}
+		return keys;
+	}
+		
+	function __items__ () {
+		var items = []
+		for (var attrib in this) {
+			if (!__specialattrib__ (attrib)) {
+				items.push ([attrib, this [attrib]]);
+			}     
+		}
+		return items;
+	}
+		
+	function __del__ (key) {
+		delete this [key];
+	}
+	
+	function __clear__ () {
+		for (var attrib in this) {
+			delete this [attrib];
+		}
+	}
+	
+	function __setdefault__ (aKey, aDefault) {
+		var result = this [aKey];
+		return result != undefined ? 
+			result :
+			aDefault != undefined ?
+				aDefault :
+				null;
+	}
+	
+	function dict (objectOrPairs) {
+		if (!objectOrPairs || objectOrPairs instanceof Array) {	// It's undefined or an array of pairs
+			var instance = {};
+			if (objectOrPairs) {
+				for (var index = 0; index < objectOrPairs.length; index++) {
+					var pair = objectOrPairs [index];
+					instance [pair [0]] = pair [1];
+				}
+			}
+		}
+		else {													// It's a JavaScript object literal
+			var instance = objectOrPairs;
+		}
+			
+		// Trancrypt interprets e.g. {aKey: 'aValue'} as a Python dict literal rather than a JavaScript object literal
+		// So dict literals rather than bare Object literals will be passed to JavaScript libraries
+		// Some JavaScript libraries call all enumerable callable properties of an object that's passed to them
+		// So the properties of a dict should be non-enumerable
+		Object.defineProperty (instance, '__class__', {value: dict, enumerable: false, writable: true});
+		Object.defineProperty (instance, 'keys', {value: __keys__, enumerable: false});
+		Object.defineProperty (instance, '__iter__', {value: __keyIterator__, enumerable: false});
+		Object.defineProperty (instance, 'items', {value: __items__, enumerable: false});		
+		Object.defineProperty (instance, 'del', {value: __del__, enumerable: false});
+		Object.defineProperty (instance, 'clear', {value: __clear__, enumerable: false});
+		Object.defineProperty (instance, 'setdefault', {value: __setdefault__, enumerable: false});
+		
+		return instance;
+	}
+	__all__.dict = dict;
+	dict.__name__ = 'dict';
+	
+	// String extensions
+	
+	function str (stringable) {
+		try {
+			return stringable.__str__ ();
+		}
+		catch (exception) {
+			return new String (stringable);
+		}
+	}
+	__all__.str = str;	
+	
+	String.prototype.__class__ = str;	// All strings are str
+	str.__name__ = 'str';
+	
+	String.prototype.__iter__ = function () {
+		return new __SeqIterator__ (this);
+	}
+		
+	String.prototype.__repr__ = function () {
+		return (this.indexOf ('\'') == -1 ? '\'' + this + '\'' : '"' + this + '"') .replace ('\n', '\\n');
+	};
+	
+	String.prototype.__str__ = function () {
+		return this;
+	};
+	
+	String.prototype.capitalize = function () {
+		return this.charAt (0).toUpperCase () + this.slice (1);
+	};
+	
+	String.prototype.endswith = function (suffix) {
+		return suffix == '' || this.slice (-suffix.length) == suffix;
+	};
+	
+	String.prototype.find  = function (sub, start) {
+		return this.indexOf (sub, start);
+	};
+	
+	String.prototype.__getslice__ = function (start, stop, step) {
+		if (start < 0) {
+			start = this.length + start;
+		}
+		
+		if (stop == null) {
+			stop = this.length;
+		}
+		else if (stop < 0) {
+			stop = this.length + stop;
+		}
+		
+		var result = '';
+		if (step == 1) {
+			result = this.substring (start, stop);
+		}
+		else {
+			for (var index = start; index < stop; index += step) {
+				result = result.concat (this.charAt(index));
+			}
+		}
+		return result;
+	}
+	
+	// Since it's worthwhile for the 'format' function to be able to deal with *args, it is defined as a property
+	// __get__ will produce a bound function if there's something before the dot
+	// Since a call using *args is compiled to e.g. <object>.<function>.apply (null, args), the function has to be bound already
+	// Otherwise it will never be, because of the null argument
+	// Using 'this' rather than 'null' contradicts the requirement to be able to pass bound functions around
+	// The object 'before the dot' won't be available at call time in that case, unless implicitly via the function bound to it
+	// While for Python methods this mechanism is generated by the compiler, for JavaScript methods it has to be provided manually
+	// Call memoizing is unattractive here, since every string would then have to hold a reference to a bound format method
+	Object.defineProperty (String.prototype, 'format', {
+		get: function () {return __get__ (this, function (self) {
+			var args = tuple ([] .slice.apply (arguments).slice (1));			
+			var autoIndex = 0;
+			return self.replace (/\{(\w*)\}/g, function (match, key) { 
+				if (key == '') {
+					key = autoIndex++;
+				}
+				if (key == +key) {	// So key is numerical
+					return args [key] == undefined ? match : args [key];
+				}
+				else {				// Key is a string
+					for (var index = 0; index < args.length; index++) {
+						// Find first 'dict' that has that key and the right field
+						if (typeof args [index] == 'object' && args [index][key] != undefined) {
+							return args [index][key];	// Return that field field
+						}
+					}
+					return match;
+				}
+			});
+		});},
+		enumerable: true, configurable:true
+	});
+	
+	String.prototype.isnumeric = function () {
+		return !isNaN (parseFloat (this)) && isFinite (this);
+	};
+	
+	String.prototype.join = function (strings) {
+		return strings.join (this);
+	};
+	
+	String.prototype.lower = function () {
+		return this.toLowerCase ();
+	};
+	
+	String.prototype.py_replace = function (old, aNew, maxreplace) {
+		return this.split (old, maxreplace) .join (aNew);
+	};
+	
+	String.prototype.lstrip = function () {
+		return this.replace (/^\s*/g, '');
+	};
+	
+	String.prototype.rfind = function (sub, start) {
+		return this.lastIndexOf (sub, start);
+	};
+	
+	String.prototype.rsplit = function (sep, maxsplit) {
+		var split = this.split (sep || /s+/);
+		return maxsplit ? [ split.slice (0, -maxsplit) .join (sep) ].concat (split.slice (-maxsplit)) : split;
+	};
+	
+	String.prototype.rstrip = function () {
+		return this.replace (/\s*$/g, '');
+	};
+	
+	String.prototype.py_split = function (sep, maxsplit) {
+		if (!sep) {
+			sep = ' ';
+		}
+		return this.split (sep || /s+/, maxsplit);
+	};
+	
+	String.prototype.startswith = function (prefix) {
+		return this.indexOf (prefix) == 0;
+	};
+	
+	String.prototype.strip = function () {
+		return this.trim ();
+	};
+		
+	String.prototype.upper = function () {
+		return this.toUpperCase ();
+	};
+	
+	String.prototype.__mul__ = function (scalar) {
+		var result = this;
+		for (var i = 1; i < scalar; i++) {
+			result = result + this;
+		}
+		return result;
+	}
+	
+	String.prototype.__rmul__ = String.prototype.__mul__;
+	
+	// Operator overloading, only the ones that make most sense in matrix operations
+	
+	var __neg__ = function (a) {
+		if (typeof a == 'object' && '__neg__' in a) {
+			return a.__neg__ ();
+		}
+		else {
+			return -a;
+		}
+	};  
+	__all__.__neg__ = __neg__;
+	
+	var __matmul__ = function (a, b) {
+		return a.__matmul__ (b);
+	};  
+	__all__.__matmul__ = __matmul__;
+	
+	var __mul__ = function (a, b) {
+		if (typeof a == 'object' && '__mul__' in a) {
+			return a.__mul__ (b);
+		}
+		else if (typeof b == 'object' && '__rmul__' in b) {
+			return b.__rmul__ (a);
+		}
+		else if (typeof a == 'string') {
+			return a.__mul__ (b);
+		}
+		else if (typeof b == 'string') {
+			return b.__rmul__ (a);
+		}
+		else {
+			return a * b;
+		}
+	};  
+	__all__.__mul__ = __mul__;
+	
+	var __div__ = function (a, b) {
+		if (typeof a == 'object' && '__div__' in a) {
+			return a.__div__ (b);
+		}
+		else if (typeof b == 'object' && '__rdiv__' in b) {
+			return b.__rdiv__ (a);
+		}
+		else {
+			return a / b;
+		}
+	};  
+	__all__.__div__ = __div__;
+	
+	var __add__ = function (a, b) {
+		if (typeof a == 'object' && '__add__' in a) {
+			return a.__add__ (b);
+		}
+		else if (typeof b == 'object' && '__radd__' in b) {
+			return b.__radd__ (a);
+		}
+		else {
+			return a + b;
+		}
+	};  
+	__all__.__add__ = __add__;
+	
+	var __sub__ = function (a, b) {
+		if (typeof a == 'object' && '__sub__' in a) {
+			return a.__sub__ (b);
+		}
+		else if (typeof b == 'object' && '__rsub__' in b) {
+			return b.__rsub__ (a);
+		}
+		else {
+			return a - b;
+		}
+	};  
+	__all__.__sub__ = __sub__;
+	
+	var __eq__ = function (a, b) {
+		if (typeof a == 'object' && '__eq__' in a) {
+			return a.__eq__ (b);
+		}
+		else {
+			return a == b
+		}
+	};
+	__all__.__eq__ = __eq__;
+		
+	var __ne__ = function (a, b) {
+		if (typeof a == 'object' && '__ne__' in a) {
+			return a.__ne__ (b);
+		}
+		else {
+			return a != b
+		}
+	};
+	__all__.__ne__ = __ne__;
+		
+	var __lt__ = function (a, b) {
+		if (typeof a == 'object' && '__lt__' in a) {
+			return a.__lt__ (b);
+		}
+		else {
+			return a < b
+		}
+	};
+	__all__.__lt__ = __lt__;
+		
+	var __le__ = function (a, b) {
+		if (typeof a == 'object' && '__le__' in a) {
+			return a.__le__ (b);
+		}
+		else {
+			return a <= b
+		}
+	};
+	__all__.__le__ = __le__;
+		
+	var __gt__ = function (a, b) {
+		if (typeof a == 'object' && '__gt__' in a) {
+			return a.__gt__ (b);
+		}
+		else {
+			return a > b
+		}
+	};
+	__all__.__gt__ = __gt__;
+		
+	var __ge__ = function (a, b) {
+		if (typeof a == 'object' && '__ge__' in a) {
+			return a.__ge__ (b);
+		}
+		else {
+			return a >= b
+		}
+	};
+	__all__.__ge__ = __ge__;
+		
+	var __getitem__ = function (container, key) {
+		if (typeof container == 'object' && '__getitem__' in container) {
+			return container.__getitem__ (key);
+		}
+		else {
+			return container [key];
+		}
+	};
+	__all__.__getitem__ = __getitem__;
+
+	var __setitem__ = function (container, key, value) {
+		if (typeof container == 'object' && '__setitem__' in container) {
+			container.__setitem__ (key, value);
+		}
+		else {
+			container [key] = value;
+		}
+	};
+	__all__.__setitem__ = __setitem__;
+
+	var __getslice__ = function (container, lower, upper, step) {
+		if (typeof container == 'object' && '__getitem__' in container) {
+			return container.__getitem__ ([lower, upper, step]);
+		}
+		else {
+			return container.__getslice__ (lower, upper, step);
+		}
+	};
+	__all__.__getslice__ = __getslice__;
+
+	var __setslice__ = function (container, lower, upper, step, value) {
+		if (typeof container == 'object' && '__setitem__' in container) {
+			container.__setitem__ ([lower, upper, step], value);
+		}
+		else {
+			container.__setslice__ (lower, upper, step, value);
+		}
+	};
+	__all__.__setslice__ = __setslice__;
+
+	var __call__ = function (/* <callee>, <params>* */) {
+		var args = [] .slice.apply (arguments)
+		if (typeof args [0] == 'object' && '__call__' in args [0]) {
+			return args [0] .__call__ .apply (null,  args.slice (1));
+		}
+		else {
+			return args [0] .apply (null, args.slice (1));
+		}		
+	};
+	__all__.__call__ = __call__;
+
+	(function () {
+		var __symbols__ = ['e5'];
+		var math = Math;
+		var setup = function () {
+			return 'l';
+		};
+		var inputs = function () {
+			return list ([list (['x', 0, 0.4, 0.01])]);
+		};
+		var linspace = function (start, end, num) {
+			var spacing = (end - start) / num;
+			return function () {
+				var __accu0__ = [];
+				for (var i = 0; i < num; i++) {
+					__accu0__.append (start + spacing * i);
+				}
+				return __accu0__;
+			} ();
+		};
+		var data = function (off) {
+			var x = linspace (1 - 3 * off, 1 + 3 * off, 100);
+			var y = function () {
+				var __accu0__ = [];
+				var __iterable0__ = x;
+				for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
+					var i = __iterable0__ [__index0__];
+					__accu0__.append (math.log (i));
+				}
+				return __accu0__;
+			} ();
+			var xp = list ([1 - off, 1 - off, 1]);
+			var yp = list ([math.log (1 - off), off / -(1000), off / -(1000)]);
+			plot (2, x, y);
+			plot (2, xp, yp);
+			var angle = (math.atan (math.log (1 - off) / -(off)) * 180) / math.PI;
+			write (2, ('The angle is ' + angle.toFixed (3)) + ' degrees');
+			write (2, 'The slope of the line is ' + 1 / (1 - off));
+		};
+		__pragma__ ('<all>')
+			__all__.data = data;
+			__all__.inputs = inputs;
+			__all__.linspace = linspace;
+			__all__.math = math;
+			__all__.setup = setup;
+		__pragma__ ('</all>')
+	}) ();
+	return __all__;
+}
+window ['tmp2'] = tmp2 ();
+</script>
+
+    <div class="container-fluid">
+    <div class="col-md-9">
+    <div id="console2"></div>
+    <canvas id="chart2" >
+    </canvas>
+    </div>
+    <div id="sliders2" class="col-md-3">
+    </div>
+    </div>
+    <script type="text/javascript">
+            addAllSliders(2);
+            charts[2] = new Chart($("#chart2"));
+            update(2);
+    </script>
 </div>
 
 </div>

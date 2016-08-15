@@ -39,7 +39,8 @@ ht = """
   			value = math.parse($(this).val()).eval();
   			responses.push(value);
   			actualValue = canswers[i];
-  			if(value-actualValue < .0001){
+  			console.log([value,actualValue,i]);
+  			if(Math.abs(value-actualValue) < .0001){
   				$(this).removeClass("incorrect-quiz").addClass("correct-quiz");
   			}
   			else {
@@ -50,7 +51,6 @@ ht = """
   			$(this).addClass("incorrect-quiz").removeClass("correct-quiz");
   		}
   	});
-  	console.log(responses);
   }
 
   </script>
