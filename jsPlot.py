@@ -25,8 +25,7 @@ def jsPlot(line, cell):
     global pid
     pid += 1
     mode,parameter = line[:line.find(" ")], line[line.find(" "):]
-    print(mode)
-    print(parameter)
+
     pF = pythonFile%(mode,parameter,cell)
     pF = pF.replace("plot(","plot(%s,"%str(pid))
     pF = pF.replace("bar(","bar(%s,"%str(pid))
@@ -41,7 +40,8 @@ def jsPlot(line, cell):
     js = js.replace('enumerable: true', 'enumerable: true, configurable:true')
     os.remove(fileName+'.py')
     os.remove("__javascript__/"+fileName+".js")
-    print(pid)
+    os.remove("__javascript__/"+fileName+".mod.js")
+
     return HTML(eachTime.replace("JSSOURCE",js).replace("PID",str(pid)))
 
 
